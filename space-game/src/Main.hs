@@ -11,8 +11,8 @@ import Assets
 
 -- Window configuration
 windowWidth, windowHeight :: Int
-windowWidth = 800
-windowHeight = 600
+windowWidth = 480
+windowHeight = 360
 
 window :: Display
 window = InWindow "Space Game - Haskell" (windowWidth, windowHeight) (100, 100)

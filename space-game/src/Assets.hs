@@ -5,13 +5,13 @@ module Assets
   , loadAssets
   ) where
 
-import Graphics.Gloss (Picture, color, rectangleSolid, translate, pictures, makeColorI)
+import Graphics.Gloss (Picture, color, rectangleSolid, translate, pictures, makeColorI, rotate)
 import Graphics.Gloss.Juicy (loadJuicyPNG)
 import Codec.Picture (readImage, convertRGBA8, Image(..), PixelRGBA8(..), imageWidth, imageHeight, pixelAt, generateImage, savePngImage, DynamicImage(..))
 
 -- Assets container holding all loaded images
 data Assets = Assets
-  { aPlayerFrames :: [Picture]  -- 4 frames of player sprite (16x16 each)
+  { aPlayerFrames :: [Picture]  -- 4 frames of player sprite (will be rotated dynamically)
   , aBackground   :: Picture    -- Background image
   }
 
@@ -48,24 +48,25 @@ cropImage src x0 y0 tw th = generateImage pick tw th
 loadAssets :: IO Assets
 loadAssets = do
   -- Load player sprite sheet (32x32 containing 4 frames of 16x16)
-  playerDynE <- readImage "../assets/player/spaceship_up.png"
+  playerDynE <- readImage "../assets/player/spaceship.png"
+  
   playerFrames <- case playerDynE of
     Left err -> do
       putStrLn $ "Warning: Could not load player sprite: " ++ err
       return []
     Right dyn -> case dyn of
       ImageRGBA8 img -> do
-        let w = imageWidth img
-            h = imageHeight img
-            frameW = 16
+        let frameW = 16
             frameH = 16
             -- Coordinates for 4 quadrants: top-left, top-right, bottom-left, bottom-right
             coords = [(0, 0), (frameW, 0), (0, frameH), (frameW, frameH)]
-            frameFiles = [ "../assets/player/frame_" ++ show i ++ ".png" | i <- [1..4] ]
+            frameFiles = [ "../assets/player/spaceship_" ++ show i ++ ".png" | i <- [1..4] ]
             crops = [ cropImage img cx cy frameW frameH | (cx, cy) <- coords ]
-        -- Save cropped frames as temporary files
+        
+        -- Save cropped frames
         sequence_ [ savePngImage f (ImageRGBA8 c) | (f, c) <- zip frameFiles crops ]
-        -- Load the cropped frames
+        
+        -- Load frames
         pics <- mapM tryLoad frameFiles
         return [ p | Just p <- pics ]
       _ -> do
@@ -82,7 +83,7 @@ loadAssets = do
       
       backgroundFinal = case mBackground of
         Just pic -> pic
-        Nothing  -> color (makeColorI 10 10 30 255) $ rectangleSolid 800 600
+        Nothing  -> color (makeColorI 10 10 30 255) $ rectangleSolid 480 360
 
   return Assets
     { aPlayerFrames = playerFramesFinal

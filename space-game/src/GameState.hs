@@ -15,6 +15,7 @@ data Direction = DUp | DDown | DLeft | DRight
 -- Game state containing all game data
 data GameState = GameState
   { playerPos   :: (Float, Float)  -- Player position (x, y)
+  , playerDir   :: Direction       -- Current facing direction
   , keysDown    :: [Direction]     -- Currently pressed keys
   , animTime    :: Float           -- Animation timer for sprite cycling
   , windowSize  :: (Int, Int)      -- Window dimensions
@@ -31,8 +32,9 @@ playerSpeed = 200.0
 -- Initial game state
 initialState :: GameState
 initialState = GameState
-  { playerPos  = (400, 300)  -- Start in center (will be adjusted based on window)
+  { playerPos  = (0, 0)      -- Start in center
+  , playerDir  = DUp         -- Start facing up
   , keysDown   = []
   , animTime   = 0.0
-  , windowSize = (800, 600)
+  , windowSize = (480, 360)
   }

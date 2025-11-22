@@ -35,11 +35,18 @@ removeKey dir gs = gs { keysDown = filter (/= dir) (keysDown gs) }
 updateGameState :: Float -> GameState -> GameState
 updateGameState dt gs = gs
   { playerPos = newPos
+  , playerDir = newDir
   , animTime  = animTime gs + dt
   }
   where
     -- Calculate movement vector from pressed keys
-    (dx, dy) = foldr addVector (0, 0) (map dirToVector (keysDown gs))
+    keys = keysDown gs
+    (dx, dy) = foldr addVector (0, 0) (map dirToVector keys)
+    
+    -- Determine facing direction based on last pressed key (prioritize most recent)
+    newDir = if null keys
+             then playerDir gs
+             else head keys
     
     -- Normalize diagonal movement
     magnitude = sqrt (dx * dx + dy * dy)
@@ -52,14 +59,15 @@ updateGameState dt gs = gs
     moveY = ndy * playerSpeed * dt
     
     (px, py) = playerPos gs
-    (winW, winH) = windowSize gs
     
-    -- Calculate boundaries (keep player on screen)
-    halfSize = playerSize / 2
-    minX = -fromIntegral winW / 2 + halfSize
-    maxX = fromIntegral winW / 2 - halfSize
-    minY = -fromIntegral winH / 2 + halfSize
-    maxY = fromIntegral winH / 2 - halfSize
+    -- Calculate boundaries based on terrain size (480x360), not window size
+    -- Allow player center to reach edges so full terrain is explorable
+    terrainW = 480.0
+    terrainH = 360.0
+    minX = -terrainW / 2
+    maxX = terrainW / 2
+    minY = -terrainH / 2
+    maxY = terrainH / 2
     
     -- Clamp position to boundaries
     newX = clamp (px + moveX) minX maxX

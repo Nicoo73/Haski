@@ -2,16 +2,21 @@
 
 .PHONY: all clean run
 
+SRC = src/Main.hs \
+      src/GameState.hs \
+      src/Input.hs \
+      src/Render.hs \
+      src/Assets.hs \
+      src/Enemy.hs \
+      src/Update.hs \
+      src/Wave.hs
+
 all: game
 
-game: src/Main.hs src/GameState.hs src/Input.hs src/Render.hs src/Assets.hs
+game: $(SRC)
 	mkdir -p bin
 	ghc -Wall -O2 -threaded -outputdir bin -o game \
-		src/Main.hs \
-		src/GameState.hs \
-		src/Input.hs \
-		src/Render.hs \
-		src/Assets.hs
+	$(SRC)
 
 run: all
 	./game

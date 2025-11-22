@@ -11,16 +11,17 @@ SRC = src/Main.hs \
       src/Update.hs \
       src/Wave.hs
 
-all: game
+all: build
 
-game: $(SRC)
-	mkdir -p bin
-	ghc -Wall -O2 -threaded -outputdir bin -o game \
-	$(SRC)
+build:
+	cabal build
 
-run: all
-	./game
+game: build
+
+run: build
+	cabal run
 
 clean:
 	rm -rf bin game
 	rm -f src/*.hi src/*.o
+	rm -rf dist-newstyle

@@ -9,11 +9,12 @@ import GameState
 import Input
 import Render
 import Assets
+import Update (updateWorld) -- actualizar balas, enemigos, oleadas
 
 -- Window configuration
 windowWidth, windowHeight :: Int
-windowWidth = 800
-windowHeight = 600
+windowWidth = 480
+windowHeight = 360
 
 window :: Display
 window = InWindow "Space Game - Haskell"
@@ -42,4 +43,4 @@ main = do
          initialGS
          (render assets)     -- función para dibujar
          handleEvent         -- eventos de teclado
-         updateGameState     -- ⬅️ ESTA es la función correcta
+         updateWorld    -- ⬅️ ESTA es la función correcta

@@ -17,28 +17,32 @@ render :: Assets -> GameState -> Picture
 render assets gs =
     pictures [ scaledBackground
              , drawEnemies gs
-             , drawPlayer assets gs
+             , drawBullets gs
+             , scaledPlayer
              ]
   where
     -- Escala según el ancho de la ventana
-    (winW, _winH) = windowSize gs
-    baseSize = 800.0
-    scaleF = fromIntegral winW / baseSize
+    (winW, winH) = windowSize gs
+
+    terrainW = 480.0
+    terrainH = 360.0
+    -- Use minimum scale to ensure terrain fits in both dimensions
+    scaleW = fromIntegral winW / terrainW
+    scaleH = fromIntegral winH / terrainH
+    scaleF = min scaleW scaleH
 
     background = aBackground assets
     scaledBackground = scale scaleF scaleF background
 
+    -- Get rotation angle based on player direction
+    rotAngle = case playerDir gs of
+      DUp    -> 0
+      DDown  -> 180
+      DLeft  -> 270
+      DRight -> 90
 
--------------------------------------------------------------
--- RENDER DEL JUGADOR
--------------------------------------------------------------
 
-drawPlayer :: Assets -> GameState -> Picture
-drawPlayer assets gs =
-    translate px py $
-        scale scaleF scaleF $
-            playerSprite
-  where
+
     (px, py) = playerPos gs
 
     -- frames del jugador
@@ -48,10 +52,23 @@ drawPlayer assets gs =
     frameIndex = floor (animTime gs * 8.0) `mod` numFrames
     playerSprite = frames !! frameIndex
 
-    -- escala de pantalla
-    (winW, _) = windowSize gs
-    scaleF = fromIntegral winW / 800.0
+    scaledPlayer = translate (px * scaleF) (py * scaleF) $ scale scaleF scaleF $ rotate rotAngle playerSprite
 
+    
+-------------------------------------------------------------
+-- RENDER DE PROYECTILES (NUEVA SECCIÓN)
+-------------------------------------------------------------
+
+drawBullets :: GameState -> Picture
+drawBullets gs = pictures (map drawBullet (bullets gs))
+  where
+    (winW, _) = windowSize gs
+    scaleF = fromIntegral winW / 800.0 -- Usar el mismo factor de escala
+
+    drawBullet bullet =
+        let (x, y) = bulletPos bullet
+        in translate x y $ scale scaleF scaleF $
+             color yellow (circleSolid 3) -- Dibujar un punto amarillo (3 píxeles)
 
 -------------------------------------------------------------
 -- RENDER DE ENEMIGOS

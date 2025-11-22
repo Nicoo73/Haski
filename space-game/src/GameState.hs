@@ -1,9 +1,11 @@
 module GameState
   ( GameState(..)
   , Direction(..)
+  , Bullet(..)
   , initialState
   , playerSize
   , playerSpeed
+  --, bulletSpeed
   , addKey
   , removeKey
   ) where
@@ -18,16 +20,32 @@ import Wave
 data Direction = DUp | DDown | DLeft | DRight
   deriving (Eq, Show)
 
+
+-------------------------------------------------------------
+-- PROYECTIL
+-------------------------------------------------------------
+
+--bulletSpeed :: Float
+--bulletSpeed = 400.0
+
+data Bullet = Bullet
+  { bulletPos :: (Float, Float)
+  , bulletDir :: Direction
+  , bulletSpeed ::Float
+  } deriving (Show)  
+
 -------------------------------------------------------------
 -- GAMESTATE
 -------------------------------------------------------------
 
 data GameState = GameState
   { playerPos   :: (Float, Float)
+  , playerDir   :: Direction 
   , keysDown    :: [Direction]
   , animTime    :: Float
   , windowSize  :: (Int, Int)
   , enemies     :: [Enemy]
+  , bullets     :: [Bullet]
   , wave        :: Wave
   } deriving (Show)
 
@@ -48,10 +66,12 @@ playerSpeed = 200.0
 initialState :: GameState
 initialState = GameState
   { playerPos   = (0, 0)
+  , playerDir   = DUp
   , keysDown    = []
   , animTime    = 0.0
-  , windowSize  = (800, 600)
+  , windowSize  = (480, 360)
   , enemies     = []
+  , bullets     = []
   , wave        = initialWave
   }
 

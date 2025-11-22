@@ -1,40 +1,71 @@
--- GameState.hs
--- Define the game state and player data
 module GameState
   ( GameState(..)
   , Direction(..)
   , initialState
   , playerSize
   , playerSpeed
+  , addKey
+  , removeKey
   ) where
 
--- Directions for player movement
+import Enemy
+import Wave
+
+-------------------------------------------------------------
+-- DIRECCIONES
+-------------------------------------------------------------
+
 data Direction = DUp | DDown | DLeft | DRight
   deriving (Eq, Show)
 
--- Game state containing all game data
+-------------------------------------------------------------
+-- GAMESTATE
+-------------------------------------------------------------
+
 data GameState = GameState
-  { playerPos   :: (Float, Float)  -- Player position (x, y)
-  , playerDir   :: Direction       -- Current facing direction
-  , keysDown    :: [Direction]     -- Currently pressed keys
-  , animTime    :: Float           -- Animation timer for sprite cycling
-  , windowSize  :: (Int, Int)      -- Window dimensions
+  { playerPos   :: (Float, Float)
+  , keysDown    :: [Direction]
+  , animTime    :: Float
+  , windowSize  :: (Int, Int)
+  , enemies     :: [Enemy]
+  , wave        :: Wave
   } deriving (Show)
 
--- Player sprite size (16x16 pixels)
+-------------------------------------------------------------
+-- CONSTANTES
+-------------------------------------------------------------
+
 playerSize :: Float
 playerSize = 16.0
 
--- Player movement speed (pixels per second)
 playerSpeed :: Float
 playerSpeed = 200.0
 
--- Initial game state
+-------------------------------------------------------------
+-- ESTADO INICIAL
+-------------------------------------------------------------
+
 initialState :: GameState
 initialState = GameState
-  { playerPos  = (0, 0)      -- Start in center
-  , playerDir  = DUp         -- Start facing up
-  , keysDown   = []
-  , animTime   = 0.0
-  , windowSize = (480, 360)
+  { playerPos   = (0, 0)
+  , keysDown    = []
+  , animTime    = 0.0
+  , windowSize  = (800, 600)
+  , enemies     = []
+  , wave        = initialWave
   }
+
+-------------------------------------------------------------
+-- FUNCIONES PARA GESTIONAR INPUT (keys)
+-------------------------------------------------------------
+
+addKey :: Direction -> GameState -> GameState
+addKey dir gs =
+  gs { keysDown =
+        if dir `elem` keysDown gs
+        then keysDown gs
+        else dir : keysDown gs }
+
+removeKey :: Direction -> GameState -> GameState
+removeKey dir gs =
+  gs { keysDown = filter (/= dir) (keysDown gs) }

@@ -7,38 +7,63 @@ module Render
 import Graphics.Gloss
 import GameState
 import Assets
+import Enemy
 
--- Render the complete game scene
+-------------------------------------------------------------
+-- RENDER GENERAL
+-------------------------------------------------------------
+
 render :: Assets -> GameState -> Picture
-render assets gs = pictures [scaledBackground, scaledPlayer]
+render assets gs =
+    pictures [ scaledBackground
+             , drawEnemies gs
+             , drawPlayer assets gs
+             ]
   where
-    -- Calculate scale factor based on window size
-    (winW, winH) = windowSize gs
-    terrainW = 480.0
-    terrainH = 360.0
-    -- Use minimum scale to ensure terrain fits in both dimensions
-    scaleW = fromIntegral winW / terrainW
-    scaleH = fromIntegral winH / terrainH
-    scaleF = min scaleW scaleH
-    
-    -- Render background (scaled)
+    -- Escala según el ancho de la ventana
+    (winW, _winH) = windowSize gs
+    baseSize = 800.0
+    scaleF = fromIntegral winW / baseSize
+
     background = aBackground assets
     scaledBackground = scale scaleF scaleF background
-    
-    -- Get rotation angle based on player direction
-    rotAngle = case playerDir gs of
-      DUp    -> 0
-      DDown  -> 180
-      DLeft  -> 270
-      DRight -> 90
-    
-    -- Render player with animation (scaled and rotated)
+
+
+-------------------------------------------------------------
+-- RENDER DEL JUGADOR
+-------------------------------------------------------------
+
+drawPlayer :: Assets -> GameState -> Picture
+drawPlayer assets gs =
+    translate px py $
+        scale scaleF scaleF $
+            playerSprite
+  where
     (px, py) = playerPos gs
+
+    -- frames del jugador
     frames = aPlayerFrames assets
     numFrames = max 1 (length frames)
-    
-    -- Cycle through frames at 8 FPS
+
     frameIndex = floor (animTime gs * 8.0) `mod` numFrames
     playerSprite = frames !! frameIndex
-    
-    scaledPlayer = translate (px * scaleF) (py * scaleF) $ scale scaleF scaleF $ rotate rotAngle playerSprite
+
+    -- escala de pantalla
+    (winW, _) = windowSize gs
+    scaleF = fromIntegral winW / 800.0
+
+
+-------------------------------------------------------------
+-- RENDER DE ENEMIGOS
+-------------------------------------------------------------
+
+drawEnemies :: GameState -> Picture
+drawEnemies gs = pictures (map drawEnemy (enemies gs))
+  where
+    (winW, _) = windowSize gs
+    scaleF = fromIntegral winW / 800.0
+
+    drawEnemy enemy =
+        let (x, y) = enemyPos enemy
+        in translate x y $ scale scaleF scaleF $
+             color red (circleSolid 12)

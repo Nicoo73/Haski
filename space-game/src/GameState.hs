@@ -47,6 +47,7 @@ data GameState = GameState
   , enemies     :: [Enemy]
   , bullets     :: [Bullet]
   , wave        :: Wave
+  , waveCount   :: Int
   } deriving (Show)
 
 -------------------------------------------------------------
@@ -73,6 +74,7 @@ initialState = GameState
   , enemies     = []
   , bullets     = []
   , wave        = initialWave
+  , waveCount   = 1
   }
 
 -------------------------------------------------------------

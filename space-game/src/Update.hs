@@ -8,41 +8,51 @@ import Wave
 import Input (updateGameState, dirToVector)
 import Data.List (partition)
 
--- (updateBullets y checkCollisions permanecen iguales, pero se usan aquí)
+-------------------------------------------------------------
+-- LÓGICA DE ACTUALIZACIÓN DEL MUNDO
+-------------------------------------------------------------
 
 updateWorld :: Float -> GameState -> GameState
 updateWorld dt gs =
   let
-    -- 1. ACTUALIZA EL JUGADOR: Mueve al jugador y actualiza el tiempo de animación.
+    -- 1. ACTUALIZA EL JUGADOR: Mueve al jugador y actualiza el tiempo.
     gsPlayerMoved = updateGameState dt gs
     
-    -- 2. MOVIMIENTO ENEMIGO Y OLEADAS: Genera enemigos y mueve a todos los existentes.
+    -- 2. SPAWN DE ENEMIGOS: Genera enemigos (actualiza el contador de la oleada)
     (spawned, newWave) = spawnWaveIfNeeded dt (wave gsPlayerMoved)
     
-    -- Enemigos existentes + Nuevos enemigos.
+    -- 3. MOVIMIENTO DE ENEMIGOS: Prepara la lista completa y los mueve (incluyendo lógica de Separación)
     allEnemies = enemies gsPlayerMoved ++ spawned
-    
-    -- Mueve a todos los enemigos hacia la posición actualizada del jugador.
     movedEnemies = map (updateEnemy dt (playerPos gsPlayerMoved) allEnemies) allEnemies
     
-    -- 3. MOVIMIENTO DE PROYECTILES: Mueve las balas y limpia las que salen de pantalla.
+    -- 4. MOVIMIENTO DE PROYECTILES: Mueve las balas y limpia las que salen.
     movedBullets = updateBullets dt gsPlayerMoved
     
-    -- 4. COLISIONES: Revisa colisiones entre proyectiles movidos y enemigos movidos.
+    -- 5. COLISIONES: Revisa colisiones entre proyectiles y enemigos.
     (finalBullets, finalEnemies) = checkCollisions movedBullets movedEnemies
+
+    -- 6. LÓGICA DE AVANCE DE OLEADA: Verifica si la oleada terminó.
+    -- El estado actual de la oleada es 'newWave' (el resultado de spawnWaveIfNeeded)
+    isWaveFinished = null finalEnemies && enemiesLeft newWave == 0 -- ¡CORRECCIÓN AQUÍ!
     
-    -- 5. DEVOLVER EL ESTADO FINAL
+    -- 7. CALCULAR LA PRÓXIMA OLEADA
+    (newWaveState, newWaveCount) = if isWaveFinished
+                                       -- Si terminó, crea la siguiente oleada (waveCount + 1)
+                                       then (nextWave (waveCount gsPlayerMoved + 1), waveCount gsPlayerMoved + 1)
+                                       -- Si no terminó, mantiene el estado de la oleada (newWave) y el contador
+                                       else (newWave, waveCount gsPlayerMoved) -- ¡CORRECCIÓN AQUÍ!
+    
+    -- 8. DEVOLVER EL ESTADO FINAL
   in gsPlayerMoved { 
        enemies = finalEnemies,
        bullets = finalBullets,
-       wave    = newWave
+       wave    = newWaveState,
+       waveCount = newWaveCount
      }
 
 -------------------------------------------------------------
--- LÓGICA DE MOVIMIENTO DE PROYECTILES (Mismas funciones que antes, solo las incluyo para que sean completas)
+-- LÓGICA DE MOVIMIENTO DE PROYECTILES (Mismas funciones que antes)
 -------------------------------------------------------------
--- Deben estar definidas aquí o ser importadas.
--- Si ya están definidas, no las necesitas pegar de nuevo, solo asegúrate que la función moveBullet usa el campo 'bulletSpeed'.
 
 updateBullets :: Float -> GameState -> [Bullet]
 updateBullets dt gs@GameState{ bullets = bs, windowSize = (winW, winH) } =

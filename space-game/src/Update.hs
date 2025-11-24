@@ -23,7 +23,7 @@ updateWorld dt gs =
     allEnemies = enemies gsPlayerMoved ++ spawned
     
     -- Mueve a todos los enemigos hacia la posición actualizada del jugador.
-    movedEnemies = map (updateEnemy dt (playerPos gsPlayerMoved)) allEnemies
+    movedEnemies = map (updateEnemy dt (playerPos gsPlayerMoved) allEnemies) allEnemies
     
     -- 3. MOVIMIENTO DE PROYECTILES: Mueve las balas y limpia las que salen de pantalla.
     movedBullets = updateBullets dt gsPlayerMoved

@@ -108,18 +108,18 @@ updatePlayer dt gs = gs
 -- SISTEMA DE ENEMIGOS (con Enemy.hs moderno)
 -------------------------------------------------------------
 
-updateEnemies :: Float -> GameState -> GameState
-updateEnemies dt gs@GameState{ enemies = es, playerPos = p } =
-  gs { enemies = map (updateEnemy dt p) es }
+--updateEnemies :: Float -> GameState -> GameState
+--updateEnemies dt gs@GameState{ enemies = es, playerPos = p } =
+--  gs { enemies = map (updateEnemy dt p) es }
 
 -------------------------------------------------------------
 -- SISTEMA DE OLEADAS (con Wave.hs moderno)
 -------------------------------------------------------------
 
-updateWave :: Float -> GameState -> GameState
-updateWave dt gs@GameState{ wave = w, enemies = es } =
-  let (spawned, newWave) = spawnWaveIfNeeded dt w
-  in gs { enemies = es ++ spawned, wave = newWave }
+--updateWave :: Float -> GameState -> GameState
+--updateWave dt gs@GameState{ wave = w, enemies = es } =
+ -- let (spawned, newWave) = spawnWaveIfNeeded dt w
+ -- in gs { enemies = es ++ spawned, wave = newWave }
 
 -------------------------------------------------------------
 -- UTILIDADES

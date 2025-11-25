@@ -23,10 +23,10 @@ buttonW, buttonH :: Float
 buttonW = 300.0
 buttonH = 60.0
 
--- Dimensiones originales de la imagen de fondo del menú
+-- Dimensiones de la imagen de fondo del menú
 menuBgW, menuBgH :: Float
-menuBgW = 1920.0 
-menuBgH = 1080.0 
+menuBgW = 1024.0 
+menuBgH = 572.0 
 
 -------------------------------------------------------------
 -- RENDER GENERAL
@@ -36,6 +36,7 @@ render :: Assets -> GameState -> Picture
 render assets gs = case currentScreen gs of
     Menu    -> drawMenuScreen assets gs
     Playing -> drawGameScreen assets gs
+    GameOver -> drawGameScreen assets gs
 
 drawGameScreen :: Assets -> GameState -> Picture
 drawGameScreen assets gs =
@@ -43,23 +44,20 @@ drawGameScreen assets gs =
              , drawEnemies gs
              , drawBullets gs
              , scaledPlayer
+             , drawHealthBar gs
              ]
   where
     (winW, winH) = windowSize gs
 
-    -- Definimos el tamaño lógico del terreno
     terrainW = 480.0
     terrainH = 360.0
     
-    -- CAMBIO IMPORTANTE: Escalado independiente (Estirar)
-    -- Calculamos la escala en X e Y por separado para llenar toda la ventana
     scaleX = fromIntegral winW / terrainW
     scaleY = fromIntegral winH / terrainH
 
     background = aBackground assets
     scaledBackground = scale scaleX scaleY background
 
-    -- Rotación del jugador
     rotAngle = case playerDir gs of
       DUp        -> 0
       DDown      -> 180
@@ -77,7 +75,6 @@ drawGameScreen assets gs =
     frameIndex = floor (animTime gs * 8.0) `mod` numFrames
     playerSprite = frames !! frameIndex
 
-    -- Aplicamos el escalado independiente a la posición y al sprite
     scaledPlayer = translate (px * scaleX) (py * scaleY) $ scale scaleX scaleY $ rotate rotAngle playerSprite
 
     
@@ -95,18 +92,49 @@ drawMenuScreen assets gs =
     winW = fromIntegral winWInt
     winH = fromIntegral winHInt
     
-    -- Escalado Estirado para el menú también
+    -- Calcular escala para que el fondo cubra toda la pantalla (estilo "cover")
     menuScaleW = winW / menuBgW
     menuScaleH = winH / menuBgH
-    
-    scaledMenuBackground = scale menuScaleW menuScaleH (aMenuBackground assets)
+    -- Usamos la escala MAYOR para asegurar que no queden bordes negros
+    menuScaleF = max menuScaleW menuScaleH 
+
+    scaledMenuBackground = scale menuScaleF menuScaleF (aMenuBackground assets)
 
     drawMenuButton =
         let 
             buttonOutline = color white (rectangleWire buttonW buttonH)
             buttonFill = color (makeColorI 0 0 128 255) (rectangleSolid (buttonW - 2) (buttonH - 2))
+            -- Ajuste de posición del texto para que quede centrado en el botón de 300px
             buttonText = translate (-120) (-10) $ scale 0.2 0.2 $ color white $ text "Comenzar a jugar"
         in translate buttonX buttonY $ pictures [buttonFill, buttonOutline, buttonText]
+
+-------------------------------------------------------------
+-- RENDER DE BARRA DE VIDA
+-------------------------------------------------------------
+
+drawHealthBar :: GameState -> Picture
+drawHealthBar gs = 
+    translate barX barY $ 
+    pictures [ bgBar, fillBar, borderBar ]
+  where
+    (winWInt, winHInt) = windowSize gs
+    
+    maxHP = 100.0
+    currentHP = fromIntegral (playerHealth gs)
+    barW = 100.0
+    barH = 10.0
+    
+    margin = 20.0
+    barX = -fromIntegral winWInt / 2 + margin + (barW / 2)
+    barY = fromIntegral winHInt / 2 - margin - (barH / 2)
+
+    fillPct = max 0 (currentHP / maxHP)
+    fillW = barW * fillPct
+
+    bgBar = color red $ rectangleSolid barW barH
+    fillBar = translate (-(barW - fillW)/2) 0 $
+              color green $ rectangleSolid fillW barH
+    borderBar = color white $ rectangleWire barW barH
 
 -------------------------------------------------------------
 -- RENDER DE PROYECTILES
@@ -119,7 +147,6 @@ drawBullets gs = pictures (map drawBullet (bullets gs))
     terrainW = 480.0
     terrainH = 360.0
     
-    -- Usamos el mismo factor de estiramiento que en el juego
     scaleX = fromIntegral winW / terrainW
     scaleY = fromIntegral winH / terrainH
 
@@ -138,8 +165,6 @@ drawEnemies gs = pictures (map drawEnemy (enemies gs))
     (winW, winH) = windowSize gs
     terrainW = 480.0
     terrainH = 360.0
-    
-    -- Usamos el mismo factor de estiramiento que en el juego
     scaleX = fromIntegral winW / terrainW
     scaleY = fromIntegral winH / terrainH
 

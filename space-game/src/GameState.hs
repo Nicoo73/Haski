@@ -2,7 +2,7 @@ module GameState
   ( GameState(..)
   , Direction(..)
   , Bullet(..)
-  , ScreenState(..)  -- ¡NUEVO!
+  , ScreenState(..)
   , initialState
   , playerSize
   , playerSpeed
@@ -17,7 +17,7 @@ import Wave
 -- TIPOS DE PANTALLA
 -------------------------------------------------------------
 
-data ScreenState = Menu | Playing
+data ScreenState = Menu | Playing | GameOver -- Asegúrate de que esto esté así
   deriving (Eq, Show)
 
 -------------------------------------------------------------
@@ -27,6 +27,7 @@ data ScreenState = Menu | Playing
 data Direction = DUp | DDown | DLeft | DRight 
                | DUpLeft | DUpRight | DDownLeft | DDownRight
   deriving (Eq, Show)
+
 
 -------------------------------------------------------------
 -- PROYECTIL
@@ -43,9 +44,10 @@ data Bullet = Bullet
 -------------------------------------------------------------
 
 data GameState = GameState
-  { currentScreen :: ScreenState -- ¡NUEVO CAMPO!
+  { currentScreen :: ScreenState
   , playerPos   :: (Float, Float)
   , playerDir   :: Direction 
+  , playerHealth :: Int
   , keysDown    :: [Direction]
   , animTime    :: Float
   , windowSize  :: (Int, Int)
@@ -71,9 +73,10 @@ playerSpeed = 200.0
 
 initialState :: GameState
 initialState = GameState
-  { currentScreen = Menu    -- ¡INICIA EN EL MENÚ!
+  { currentScreen = Menu
   , playerPos   = (0, 0)
   , playerDir   = DUp
+  , playerHealth = 100
   , keysDown    = []
   , animTime    = 0.0
   , windowSize  = (480, 360)

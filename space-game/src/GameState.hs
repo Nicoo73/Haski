@@ -1,54 +1,92 @@
 module GameState
   ( GameState(..)
-  , Direction(..)
+  , Direction(..)  -- Re-export from Enemy
   , Bullet(..)
+  , EnemyBullet(..)
+  , PlayerStats(..)
+  , Wave(..)
   , initialState
+  , initialWave
   , playerSize
-  , playerSpeed
-  --, bulletSpeed
+  , playerStats
+  , playerRange
+  , terrainWidth
+  , terrainHeight
   , addKey
   , removeKey
   ) where
 
-import Enemy
-import Wave
+import Enemy (Direction(..))
+import qualified Enemy as E
+-- No importar Wave aquí para evitar dependencia circular
+-- Wave importará GameState solo para PlayerStats
 
 -------------------------------------------------------------
--- DIRECCIONES
+-- DIRECCIONES (Re-exportado desde Enemy)
 -------------------------------------------------------------
-
-data Direction = DUp | DDown | DLeft | DRight 
-               | DUpLeft | DUpRight | DDownLeft | DDownRight
-  deriving (Eq, Show)
+-- Definición movida a Enemy.hs para evitar dependencia circular
 
 
 -------------------------------------------------------------
--- PROYECTIL
+-- ESTADÍSTICAS DEL JUGADOR
 -------------------------------------------------------------
 
---bulletSpeed :: Float
---bulletSpeed = 400.0
+data PlayerStats = PlayerStats
+  { playerHealth       :: Int
+  , playerDamage       :: Int
+  , playerMoveSpeed    :: Float  -- Base movement speed
+  , playerBulletSpeed  :: Float  -- Base bullet speed
+  } deriving (Show)
+
+-------------------------------------------------------------
+-- PROYECTIL DEL JUGADOR
+-------------------------------------------------------------
 
 data Bullet = Bullet
   { bulletPos :: (Float, Float)
   , bulletDir :: Direction
-  , bulletSpeed ::Float
-  } deriving (Show)  
+  , bulletSpeed :: Float
+  } deriving (Show)
+
+-------------------------------------------------------------
+-- PROYECTIL DEL ENEMIGO
+-------------------------------------------------------------
+
+data EnemyBullet = EnemyBullet
+  { eBulletPos :: (Float, Float)
+  , eBulletDir :: Direction
+  , eBulletSpeed :: Float
+  , eBulletDamage :: Int
+  } deriving (Show)
+
+-------------------------------------------------------------
+-- WAVE (definición local para evitar dependencia circular)
+-------------------------------------------------------------
+
+data Wave = Wave
+  { enemiesLeft    :: Int
+  , timeSinceSpawn :: Float
+  } deriving (Show)
+
+initialWave :: Wave
+initialWave = Wave { enemiesLeft = 5, timeSinceSpawn = 0 }  
 
 -------------------------------------------------------------
 -- GAMESTATE
 -------------------------------------------------------------
 
 data GameState = GameState
-  { playerPos   :: (Float, Float)
-  , playerDir   :: Direction 
-  , keysDown    :: [Direction]
-  , animTime    :: Float
-  , windowSize  :: (Int, Int)
-  , enemies     :: [Enemy]
-  , bullets     :: [Bullet]
-  , wave        :: Wave
-  , waveCount   :: Int
+  { playerPos      :: (Float, Float)
+  , playerDir      :: Direction 
+  , keysDown       :: [Direction]
+  , animTime       :: Float
+  , windowSize     :: (Int, Int)
+  , enemies        :: [E.Enemy]
+  , bullets        :: [Bullet]
+  , enemyBullets   :: [EnemyBullet]
+  , wave           :: Wave
+  , waveCount      :: Int
+  , currentHealth  :: Int  -- Vida actual del jugador
   } deriving (Show)
 
 -------------------------------------------------------------
@@ -58,8 +96,25 @@ data GameState = GameState
 playerSize :: Float
 playerSize = 16.0
 
-playerSpeed :: Float
-playerSpeed = 200.0
+-- Dimensiones del terreno
+terrainWidth :: Float
+terrainWidth = 640.0  -- Aumentado para dar más espacio horizontal
+
+terrainHeight :: Float
+terrainHeight = 360.0
+
+-- Estadísticas base del jugador (configurables)
+playerStats :: PlayerStats
+playerStats = PlayerStats
+  { playerHealth      = 10
+  , playerDamage      = 2
+  , playerMoveSpeed   = 200.0  -- Pixels per second
+  , playerBulletSpeed = 400.0  -- Pixels per second
+  }
+
+-- Rango efectivo del jugador (70% del terreno disponible)
+playerRange :: Float
+playerRange = min terrainWidth terrainHeight * 0.7  -- 70% del lado más pequeño
 
 -------------------------------------------------------------
 -- ESTADO INICIAL
@@ -67,15 +122,17 @@ playerSpeed = 200.0
 
 initialState :: GameState
 initialState = GameState
-  { playerPos   = (0, 0)
-  , playerDir   = DUp
-  , keysDown    = []
-  , animTime    = 0.0
-  , windowSize  = (480, 360)
-  , enemies     = []
-  , bullets     = []
-  , wave        = initialWave
-  , waveCount   = 1
+  { playerPos     = (0, 0)
+  , playerDir     = DUp
+  , keysDown      = []
+  , animTime      = 0.0
+  , windowSize    = (640, 360)  -- Actualizado al nuevo tamaño de terreno
+  , enemies       = []
+  , bullets       = []
+  , enemyBullets  = []
+  , wave          = initialWave
+  , waveCount     = 1
+  , currentHealth = playerHealth playerStats
   }
 
 -------------------------------------------------------------

@@ -13,6 +13,7 @@ import Codec.Picture (readImage, convertRGBA8, Image(..), PixelRGBA8(..), imageW
 data Assets = Assets
   { aPlayerFrames :: [Picture]  -- 4 frames of player sprite (16x16 each)
   , aBackground   :: Picture    -- Background image
+  , aCazaSprite   :: Picture    -- Caza enemy sprite (24x24)
   }
 
 -- Try to load a PNG file
@@ -75,6 +76,9 @@ loadAssets = do
   -- Load background (JPG format)
   mBackground <- tryLoadJPG "../assets/background/background_1.jpg"
 
+  -- Load Caza enemy sprite (24x24 PNG)
+  mCazaSprite <- tryLoad "../assets/enemies/caza.png"
+
   -- Create fallback graphics if loading fails
   let playerFramesFinal = if null playerFrames
                           then [ translate 0 0 $ color (makeColorI 100 100 255 255) $ rectangleSolid 16 16 ]
@@ -83,8 +87,13 @@ loadAssets = do
       backgroundFinal = case mBackground of
         Just pic -> pic
         Nothing  -> color (makeColorI 10 10 30 255) $ rectangleSolid 480 360
+      
+      cazaSpriteFinal = case mCazaSprite of
+        Just pic -> pic
+        Nothing  -> color (makeColorI 255 50 50 255) $ rectangleSolid 24 24
 
   return Assets
     { aPlayerFrames = playerFramesFinal
     , aBackground   = backgroundFinal
+    , aCazaSprite   = cazaSpriteFinal
     }

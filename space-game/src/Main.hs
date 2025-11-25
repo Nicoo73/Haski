@@ -13,7 +13,7 @@ import Update (updateWorld) -- actualizar balas, enemigos, oleadas
 
 -- Window configuration
 windowWidth, windowHeight :: Int
-windowWidth = 480
+windowWidth = 640  -- Actualizado al nuevo ancho de terreno
 windowHeight = 360
 
 window :: Display

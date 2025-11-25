@@ -9,7 +9,8 @@ module Input
 
 import Graphics.Gloss.Interface.Pure.Game
 import GameState
-import Enemy
+import Enemy (vectorToDirection)
+import qualified Enemy as E
 import Wave
 
 -------------------------------------------------------------
@@ -42,11 +43,10 @@ handleEvent _ gs = gs
 shootBullet :: GameState -> GameState
 shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs } =
   let 
-    initialBulletSpeed = 400.0 -- Define la velocidad base aquí
     newBullet = Bullet { 
         bulletPos = pPos, 
         bulletDir = pDir, 
-        bulletSpeed = initialBulletSpeed -- ¡ASIGNAR VALOR!
+        bulletSpeed = playerBulletSpeed playerStats
     }
   in gs { bullets = newBullet : bs }
 
@@ -57,7 +57,8 @@ shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs } =
 updateGameState :: Float -> GameState -> GameState
 updateGameState dt =
       updatePlayer dt       -- mover jugador
-  .   updateBullets dt      -- mover proyectiles
+  .   updateBullets dt      -- mover proyectiles del jugador
+  .   updateEnemyBullets dt -- mover proyectiles de enemigos
  --   . updateEnemies dt      -- mover enemigos
  -- . updateWave dt         -- spawnear enemigos
    
@@ -84,17 +85,19 @@ updatePlayer dt gs = gs
     magnitude = sqrt (dx*dx + dy*dy)
     (ndx, ndy) = if magnitude > 0 then (dx/magnitude, dy/magnitude) else (0,0)
 
-    moveX = ndx * playerSpeed * dt
-    moveY = ndy * playerSpeed * dt
+    moveX = ndx * playerMoveSpeed playerStats * dt
+    moveY = ndy * playerMoveSpeed playerStats * dt
 
     (px, py) = playerPos gs
 
-    terrainW = 480.0
+    terrainW = 640.0  -- Actualizado al nuevo ancho
     terrainH = 360.0
-    minX = -terrainW / 2
-    maxX = terrainW / 2
-    minY = -terrainH / 2
-    maxY = terrainH / 2
+    margin = 16.0  -- Margen para evitar pegarse al borde
+    -- Ajustar límites Y para dar más espacio (usar todo el terreno disponible)
+    minX = -terrainW / 2 + margin
+    maxX = terrainW / 2 - margin
+    minY = -terrainH / 2 + margin
+    maxY = terrainH / 2 - margin
 
     newX = clamp (px + moveX) minX maxX
     newY = clamp (py + moveY) minY maxY
@@ -131,6 +134,34 @@ updateBullets dt gs@GameState{ bullets = bs } =
       in abs bx < (terrainW / 2 + margin) && abs by < (terrainH / 2 + margin)
 
 -------------------------------------------------------------
+-- SISTEMA DE PROYECTILES ENEMIGOS
+-------------------------------------------------------------
+
+updateEnemyBullets :: Float -> GameState -> GameState
+updateEnemyBullets dt gs@GameState{ enemyBullets = ebs } =
+  gs { enemyBullets = filter inBounds (map (moveEnemyBullet dt) ebs) }
+  where
+    -- Move enemy bullet based on its direction and speed
+    moveEnemyBullet :: Float -> EnemyBullet -> EnemyBullet
+    moveEnemyBullet deltaTime eBullet =
+      let (bx, by) = eBulletPos eBullet
+          dir = eBulletDir eBullet
+          speed = eBulletSpeed eBullet
+          (dx, dy) = dirToVector dir
+          newX = bx + dx * speed * deltaTime
+          newY = by + dy * speed * deltaTime
+      in eBullet { eBulletPos = (newX, newY) }
+    
+    -- Check if bullet is still within terrain bounds
+    inBounds :: EnemyBullet -> Bool
+    inBounds eBullet =
+      let (bx, by) = eBulletPos eBullet
+          terrainW = 480.0
+          terrainH = 360.0
+          margin = 50.0
+      in abs bx < (terrainW / 2 + margin) && abs by < (terrainH / 2 + margin)
+
+-------------------------------------------------------------
 -- SISTEMA DE ENEMIGOS (con Enemy.hs moderno)
 -------------------------------------------------------------
 
@@ -160,19 +191,6 @@ dirToVector DUpLeft    = (-1, 1)
 dirToVector DUpRight   = (1, 1)
 dirToVector DDownLeft  = (-1, -1)
 dirToVector DDownRight = (1, -1)
-
--- Convert movement vector to Direction (8 directions)
-vectorToDirection :: (Float, Float) -> Direction
-vectorToDirection (dx, dy)
-  | dx > 0.3 && dy > 0.3   = DUpRight
-  | dx < -0.3 && dy > 0.3  = DUpLeft
-  | dx > 0.3 && dy < -0.3  = DDownRight
-  | dx < -0.3 && dy < -0.3 = DDownLeft
-  | dy > 0.3               = DUp
-  | dy < -0.3              = DDown
-  | dx < -0.3              = DLeft
-  | dx > 0.3               = DRight
-  | otherwise              = DUp  -- Default
 
 clamp :: Float -> Float -> Float -> Float
 clamp x a b = max a (min b x)

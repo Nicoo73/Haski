@@ -1,6 +1,4 @@
 -- Input.hs
--- Handle keyboard input, player movement, and enemy/wave updates
-
 module Input
   ( handleEvent
   , updateGameState
@@ -29,7 +27,6 @@ handleEvent (EventKey (Char c) keyState _ _) gs = case (c, keyState) of
   (' ', Down) -> shootBullet gs  -- DISPAROS
   _           -> gs
 
--- ¡ESTA LÍNEA DEBE EXISTIR SI OCURRE UN FALLO SILENCIOSO EN LA DETECCIÓN!
 handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs = shootBullet gs
 
 handleEvent (EventResize newSize) gs =
@@ -38,15 +35,16 @@ handleEvent (EventResize newSize) gs =
 handleEvent _ gs = gs
 
 
--- NUEVA FUNCIÓN: DISPAROS
+-- NUEVA FUNCIÓN: DISPAROS ACTUALIZADA
 shootBullet :: GameState -> GameState
-shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs } =
+shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs, playerDamage = pDmg } =
   let 
-    initialBulletSpeed = 400.0 -- Define la velocidad base aquí
+    initialBulletSpeed = 400.0
     newBullet = Bullet { 
-        bulletPos = pPos, 
-        bulletDir = pDir, 
-        bulletSpeed = initialBulletSpeed -- ¡ASIGNAR VALOR!
+        bulletPos    = pPos, 
+        bulletDir    = pDir, 
+        bulletSpeed  = initialBulletSpeed,
+        bulletDamage = pDmg -- La bala hereda el daño actual del jugador
     }
   in gs { bullets = newBullet : bs }
 
@@ -56,10 +54,7 @@ shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs } =
 
 updateGameState :: Float -> GameState -> GameState
 updateGameState dt =
-      updatePlayer dt       -- mover jugador
- --   updateEnemies dt      -- mover enemigos
- -- . updateWave dt         -- spawnear enemigos
-   
+      updatePlayer dt
 
 -------------------------------------------------------------
 -- SISTEMA DE MOVIMIENTO DEL JUGADOR
@@ -72,22 +67,20 @@ updatePlayer dt gs = gs
   , animTime = animTime gs + dt
   }
   where
-    ---
     keys = keysDown gs
     (dx, dy) = foldr addVector (0, 0) (map dirToVector keys)
     
-    -- Determine facing direction based on last pressed key (prioritize most recent)
     newDir = if null keys
              then playerDir gs
              else head keys
-   ---
-   -- (dx, dy) = foldr addVector (0, 0) (map dirToVector (keysDown gs))
 
     magnitude = sqrt (dx*dx + dy*dy)
     (ndx, ndy) = if magnitude > 0 then (dx/magnitude, dy/magnitude) else (0,0)
 
-    moveX = ndx * playerSpeed * dt
-    moveY = ndy * playerSpeed * dt
+    speedActual = currentSpeed gs
+
+    moveX = ndx * speedActual * dt
+    moveY = ndy * speedActual * dt
 
     (px, py) = playerPos gs
 
@@ -103,23 +96,6 @@ updatePlayer dt gs = gs
     newPos = (newX, newY)
 
     addVector (a,b) (c,d) = (a+c, b+d)
-
--------------------------------------------------------------
--- SISTEMA DE ENEMIGOS (con Enemy.hs moderno)
--------------------------------------------------------------
-
---updateEnemies :: Float -> GameState -> GameState
---updateEnemies dt gs@GameState{ enemies = es, playerPos = p } =
---  gs { enemies = map (updateEnemy dt p) es }
-
--------------------------------------------------------------
--- SISTEMA DE OLEADAS (con Wave.hs moderno)
--------------------------------------------------------------
-
---updateWave :: Float -> GameState -> GameState
---updateWave dt gs@GameState{ wave = w, enemies = es } =
- -- let (spawned, newWave) = spawnWaveIfNeeded dt w
- -- in gs { enemies = es ++ spawned, wave = newWave }
 
 -------------------------------------------------------------
 -- UTILIDADES

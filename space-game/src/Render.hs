@@ -1,5 +1,3 @@
--- Render.hs
--- Render the game state to the screen
 module Render
   ( render
   ) where
@@ -8,6 +6,7 @@ import Graphics.Gloss
 import GameState
 import Assets
 import Enemy
+import Item
 
 -------------------------------------------------------------
 -- RENDER GENERAL
@@ -16,17 +15,17 @@ import Enemy
 render :: Assets -> GameState -> Picture
 render assets gs =
     pictures [ scaledBackground
+             , drawItems gs    
              , drawEnemies gs
              , drawBullets gs
              , scaledPlayer
+             , drawHUD gs      -- Pantalla de info (HUD)
              ]
   where
-    -- Escala según el ancho de la ventana
     (winW, winH) = windowSize gs
 
     terrainW = 480.0
     terrainH = 360.0
-    -- Use minimum scale to ensure terrain fits in both dimensions
     scaleW = fromIntegral winW / terrainW
     scaleH = fromIntegral winH / terrainH
     scaleF = min scaleW scaleH
@@ -34,41 +33,53 @@ render assets gs =
     background = aBackground assets
     scaledBackground = scale scaleF scaleF background
 
-    -- Get rotation angle based on player direction
     rotAngle = case playerDir gs of
       DUp    -> 0
       DDown  -> 180
       DLeft  -> 270
       DRight -> 90
 
-
-
     (px, py) = playerPos gs
 
-    -- frames del jugador
     frames = aPlayerFrames assets
     numFrames = max 1 (length frames)
-
     frameIndex = floor (animTime gs * 8.0) `mod` numFrames
     playerSprite = frames !! frameIndex
 
     scaledPlayer = translate (px * scaleF) (py * scaleF) $ scale scaleF scaleF $ rotate rotAngle playerSprite
 
-    
 -------------------------------------------------------------
--- RENDER DE PROYECTILES (NUEVA SECCIÓN)
+-- RENDER DE ITEMS
+-------------------------------------------------------------
+
+drawItems :: GameState -> Picture
+drawItems gs = pictures (map drawItem (items gs))
+  where
+    (winW, _) = windowSize gs
+    scaleF = fromIntegral winW / 800.0 
+
+    drawItem item =
+      let (x,y) = itemPos item
+          (col, shape) = case itemType item of
+              HealSmall   -> (green, circleSolid 8)
+              SpeedBoost  -> (azure, rectangleSolid 10 10)
+              DamageBoost -> (violet, rotate 45 $ rectangleSolid 9 9) -- Violeta para daño
+      in translate x y $ scale scaleF scaleF $ color col shape
+
+-------------------------------------------------------------
+-- RENDER DE PROYECTILES
 -------------------------------------------------------------
 
 drawBullets :: GameState -> Picture
 drawBullets gs = pictures (map drawBullet (bullets gs))
   where
     (winW, _) = windowSize gs
-    scaleF = fromIntegral winW / 800.0 -- Usar el mismo factor de escala
+    scaleF = fromIntegral winW / 800.0 
 
     drawBullet bullet =
         let (x, y) = bulletPos bullet
         in translate x y $ scale scaleF scaleF $
-             color yellow (circleSolid 3) -- Dibujar un punto amarillo (3 píxeles)
+             color yellow (circleSolid 3)
 
 -------------------------------------------------------------
 -- RENDER DE ENEMIGOS
@@ -84,3 +95,10 @@ drawEnemies gs = pictures (map drawEnemy (enemies gs))
         let (x, y) = enemyPos enemy
         in translate x y $ scale scaleF scaleF $
              color red (circleSolid 12)
+
+-------------------------------------------------------------
+-- HUD SIMPLE (Vida y DAÑO)
+-------------------------------------------------------------
+drawHUD :: GameState -> Picture
+drawHUD gs = translate (-200) 150 $ scale 0.15 0.15 $ color white $ 
+             text ("HP: " ++ show (playerHP gs) ++ " | Dmg: " ++ show (playerDamage gs))

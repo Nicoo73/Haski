@@ -4,14 +4,14 @@ module GameState
   , Bullet(..)
   , initialState
   , playerSize
-  , playerSpeed
-  --, bulletSpeed
+  , basePlayerSpeed
   , addKey
   , removeKey
   ) where
 
 import Enemy
 import Wave
+import Item (Item)
 
 -------------------------------------------------------------
 -- DIRECCIONES
@@ -20,18 +20,15 @@ import Wave
 data Direction = DUp | DDown | DLeft | DRight
   deriving (Eq, Show)
 
-
 -------------------------------------------------------------
 -- PROYECTIL
 -------------------------------------------------------------
 
---bulletSpeed :: Float
---bulletSpeed = 400.0
-
 data Bullet = Bullet
-  { bulletPos :: (Float, Float)
-  , bulletDir :: Direction
-  , bulletSpeed ::Float
+  { bulletPos    :: (Float, Float)
+  , bulletDir    :: Direction
+  , bulletSpeed  :: Float
+  , bulletDamage :: Int  -- NUEVO: La bala lleva el daño con el que fue disparada
   } deriving (Show)  
 
 -------------------------------------------------------------
@@ -39,15 +36,23 @@ data Bullet = Bullet
 -------------------------------------------------------------
 
 data GameState = GameState
-  { playerPos   :: (Float, Float)
-  , playerDir   :: Direction 
-  , keysDown    :: [Direction]
-  , animTime    :: Float
-  , windowSize  :: (Int, Int)
-  , enemies     :: [Enemy]
-  , bullets     :: [Bullet]
-  , wave        :: Wave
-  , waveCount   :: Int
+  { playerPos    :: (Float, Float)
+  , playerDir    :: Direction 
+  , keysDown     :: [Direction]
+  , animTime     :: Float
+  , windowSize   :: (Int, Int)
+  
+  -- Entidades
+  , enemies      :: [Enemy]
+  , bullets      :: [Bullet]
+  , items        :: [Item]
+  
+  -- Estado del Juego
+  , wave         :: Wave
+  , waveCount    :: Int
+  , playerHP     :: Int          
+  , currentSpeed :: Float        
+  , playerDamage :: Int          -- NUEVO: Reemplaza a 'score'. Daño actual del jugador.
   } deriving (Show)
 
 -------------------------------------------------------------
@@ -57,8 +62,8 @@ data GameState = GameState
 playerSize :: Float
 playerSize = 16.0
 
-playerSpeed :: Float
-playerSpeed = 200.0
+basePlayerSpeed :: Float
+basePlayerSpeed = 200.0
 
 -------------------------------------------------------------
 -- ESTADO INICIAL
@@ -66,15 +71,19 @@ playerSpeed = 200.0
 
 initialState :: GameState
 initialState = GameState
-  { playerPos   = (0, 0)
-  , playerDir   = DUp
-  , keysDown    = []
-  , animTime    = 0.0
-  , windowSize  = (480, 360)
-  , enemies     = []
-  , bullets     = []
-  , wave        = initialWave
-  , waveCount   = 1
+  { playerPos    = (0, 0)
+  , playerDir    = DUp
+  , keysDown     = []
+  , animTime     = 0.0
+  , windowSize   = (480, 360)
+  , enemies      = []
+  , bullets      = []
+  , items        = []            
+  , wave         = initialWave
+  , waveCount    = 1
+  , playerHP     = 100           
+  , currentSpeed = basePlayerSpeed
+  , playerDamage = 10            -- Daño inicial (empiezas pegando 10)
   }
 
 -------------------------------------------------------------

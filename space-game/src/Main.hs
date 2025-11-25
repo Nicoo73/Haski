@@ -27,6 +27,12 @@ backgroundColor = black
 fps :: Int
 fps = 60
 
+-- Nueva función de actualización: solo actualiza el mundo si el estado es Playing
+safeUpdateWorld :: Float -> GameState -> GameState
+safeUpdateWorld dt gs
+    | currentScreen gs == Playing = updateWorld dt gs
+    | otherwise                   = gs -- No actualiza nada en el menú
+
 main :: IO ()
 main = do
     putStrLn "Loading assets..."
@@ -43,4 +49,5 @@ main = do
          initialGS
          (render assets)     -- función para dibujar
          handleEvent         -- eventos de teclado
-         updateWorld    -- ⬅️ ESTA es la función correcta
+         --updateWorld    -- ⬅️ ESTA es la función correcta
+         safeUpdateWorld     -- función de actualización condicional

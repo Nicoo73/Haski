@@ -12,12 +12,30 @@ import GameState
 import Enemy
 import Wave
 
+------------------------------------------------------------
+-- CONSTANTES DEL BOTÓN (Para detección de clics)
+-------------------------------------------------------------
+
+-- Posición del botón (centro del mapa, debe coincidir con Render.hs)
+buttonX, buttonY :: Float
+buttonX = 0.0
+buttonY = -50.0
+
+-- Tamaño del botón (debe coincidir con Render.hs)
+buttonW, buttonH :: Float
+buttonW = 250.0
+buttonH = 60.0
+
+
 -------------------------------------------------------------
 -- EVENTOS DE TECLAS
 -------------------------------------------------------------
 
 handleEvent :: Event -> GameState -> GameState
-handleEvent (EventKey (Char c) keyState _ _) gs = case (c, keyState) of
+handleEvent (EventKey (MouseButton LeftButton) Down _ (mx, my)) gs 
+  | currentScreen gs == Menu = handleMenuClick mx my gs
+handleEvent (EventKey (Char c) keyState _ _) gs 
+  | currentScreen gs == Playing = case (c, keyState) of
   ('w', Down) -> addKey DUp gs
   ('a', Down) -> addKey DLeft gs
   ('s', Down) -> addKey DDown gs
@@ -36,6 +54,24 @@ handleEvent (EventResize newSize) gs =
   gs { windowSize = newSize }
 
 handleEvent _ gs = gs
+
+
+------------------------------------------------------------
+-- LÓGICA DE MENÚ
+-------------------------------------------------------------
+
+handleMenuClick :: Float -> Float -> GameState -> GameState
+handleMenuClick mx my gs
+  | isInsideButton mx my = gs { currentScreen = Playing }
+  | otherwise = gs
+  where
+    -- Función para detectar si el clic está dentro del área del botón
+    isInsideButton x y =
+      x >= buttonX - buttonW / 2 &&
+      x <= buttonX + buttonW / 2 &&
+      y >= buttonY - buttonH / 2 &&
+      y <= buttonY + buttonH / 2
+
 
 
 -- NUEVA FUNCIÓN: DISPAROS

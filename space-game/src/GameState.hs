@@ -2,16 +2,23 @@ module GameState
   ( GameState(..)
   , Direction(..)
   , Bullet(..)
+  , ScreenState(..)  -- ¡NUEVO!
   , initialState
   , playerSize
   , playerSpeed
-  --, bulletSpeed
   , addKey
   , removeKey
   ) where
 
 import Enemy
 import Wave
+
+-------------------------------------------------------------
+-- TIPOS DE PANTALLA
+-------------------------------------------------------------
+
+data ScreenState = Menu | Playing
+  deriving (Eq, Show)
 
 -------------------------------------------------------------
 -- DIRECCIONES
@@ -21,18 +28,14 @@ data Direction = DUp | DDown | DLeft | DRight
                | DUpLeft | DUpRight | DDownLeft | DDownRight
   deriving (Eq, Show)
 
-
 -------------------------------------------------------------
 -- PROYECTIL
 -------------------------------------------------------------
 
---bulletSpeed :: Float
---bulletSpeed = 400.0
-
 data Bullet = Bullet
-  { bulletPos :: (Float, Float)
-  , bulletDir :: Direction
-  , bulletSpeed ::Float
+  { bulletPos   :: (Float, Float)
+  , bulletDir   :: Direction
+  , bulletSpeed :: Float
   } deriving (Show)  
 
 -------------------------------------------------------------
@@ -40,7 +43,8 @@ data Bullet = Bullet
 -------------------------------------------------------------
 
 data GameState = GameState
-  { playerPos   :: (Float, Float)
+  { currentScreen :: ScreenState -- ¡NUEVO CAMPO!
+  , playerPos   :: (Float, Float)
   , playerDir   :: Direction 
   , keysDown    :: [Direction]
   , animTime    :: Float
@@ -67,7 +71,8 @@ playerSpeed = 200.0
 
 initialState :: GameState
 initialState = GameState
-  { playerPos   = (0, 0)
+  { currentScreen = Menu    -- ¡INICIA EN EL MENÚ!
+  , playerPos   = (0, 0)
   , playerDir   = DUp
   , keysDown    = []
   , animTime    = 0.0

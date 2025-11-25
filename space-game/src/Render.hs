@@ -34,12 +34,16 @@ render assets gs =
     background = aBackground assets
     scaledBackground = scale scaleF scaleF background
 
-    -- Get rotation angle based on player direction
+    -- Get rotation angle based on player direction (8 directions)
     rotAngle = case playerDir gs of
-      DUp    -> 0
-      DDown  -> 180
-      DLeft  -> 270
-      DRight -> 90
+      DUp        -> 0
+      DDown      -> 180
+      DLeft      -> 270
+      DRight     -> 90
+      DUpLeft    -> 315  -- 45° hacia arriba-izquierda
+      DUpRight   -> 45   -- 45° hacia arriba-derecha
+      DDownLeft  -> 225  -- 45° hacia abajo-izquierda
+      DDownRight -> 135  -- 45° hacia abajo-derecha
 
 
 
@@ -62,12 +66,16 @@ render assets gs =
 drawBullets :: GameState -> Picture
 drawBullets gs = pictures (map drawBullet (bullets gs))
   where
-    (winW, _) = windowSize gs
-    scaleF = fromIntegral winW / 800.0 -- Usar el mismo factor de escala
+    (winW, winH) = windowSize gs
+    terrainW = 480.0
+    terrainH = 360.0
+    scaleW = fromIntegral winW / terrainW
+    scaleH = fromIntegral winH / terrainH
+    scaleF = min scaleW scaleH
 
     drawBullet bullet =
         let (x, y) = bulletPos bullet
-        in translate x y $ scale scaleF scaleF $
+        in translate (x * scaleF) (y * scaleF) $ scale scaleF scaleF $
              color yellow (circleSolid 3) -- Dibujar un punto amarillo (3 píxeles)
 
 -------------------------------------------------------------

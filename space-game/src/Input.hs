@@ -57,7 +57,8 @@ shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs } =
 updateGameState :: Float -> GameState -> GameState
 updateGameState dt =
       updatePlayer dt       -- mover jugador
- --   updateEnemies dt      -- mover enemigos
+  .   updateBullets dt      -- mover proyectiles
+ --   . updateEnemies dt      -- mover enemigos
  -- . updateWave dt         -- spawnear enemigos
    
 
@@ -72,16 +73,13 @@ updatePlayer dt gs = gs
   , animTime = animTime gs + dt
   }
   where
-    ---
     keys = keysDown gs
     (dx, dy) = foldr addVector (0, 0) (map dirToVector keys)
     
-    -- Determine facing direction based on last pressed key (prioritize most recent)
-    newDir = if null keys
-             then playerDir gs
-             else head keys
-   ---
-   -- (dx, dy) = foldr addVector (0, 0) (map dirToVector (keysDown gs))
+    -- Determine facing direction based on movement vector (8 directions)
+    newDir = if dx == 0 && dy == 0
+             then playerDir gs  -- No movement, keep current direction
+             else vectorToDirection (dx, dy)
 
     magnitude = sqrt (dx*dx + dy*dy)
     (ndx, ndy) = if magnitude > 0 then (dx/magnitude, dy/magnitude) else (0,0)
@@ -105,6 +103,34 @@ updatePlayer dt gs = gs
     addVector (a,b) (c,d) = (a+c, b+d)
 
 -------------------------------------------------------------
+-- SISTEMA DE PROYECTILES
+-------------------------------------------------------------
+
+updateBullets :: Float -> GameState -> GameState
+updateBullets dt gs@GameState{ bullets = bs } =
+  gs { bullets = filter inBounds (map (moveBullet dt) bs) }
+  where
+    -- Move bullet based on its direction and speed
+    moveBullet :: Float -> Bullet -> Bullet
+    moveBullet deltaTime bullet =
+      let (bx, by) = bulletPos bullet
+          dir = bulletDir bullet
+          speed = bulletSpeed bullet
+          (dx, dy) = dirToVector dir
+          newX = bx + dx * speed * deltaTime
+          newY = by + dy * speed * deltaTime
+      in bullet { bulletPos = (newX, newY) }
+    
+    -- Check if bullet is still within terrain bounds
+    inBounds :: Bullet -> Bool
+    inBounds bullet =
+      let (bx, by) = bulletPos bullet
+          terrainW = 480.0
+          terrainH = 360.0
+          margin = 50.0  -- Extra margin before removing bullet
+      in abs bx < (terrainW / 2 + margin) && abs by < (terrainH / 2 + margin)
+
+-------------------------------------------------------------
 -- SISTEMA DE ENEMIGOS (con Enemy.hs moderno)
 -------------------------------------------------------------
 
@@ -126,10 +152,27 @@ updatePlayer dt gs = gs
 -------------------------------------------------------------
 
 dirToVector :: Direction -> (Float, Float)
-dirToVector DUp    = (0, 1)
-dirToVector DDown  = (0,-1)
-dirToVector DLeft  = (-1,0)
-dirToVector DRight = (1, 0)
+dirToVector DUp        = (0, 1)
+dirToVector DDown      = (0, -1)
+dirToVector DLeft      = (-1, 0)
+dirToVector DRight     = (1, 0)
+dirToVector DUpLeft    = (-1, 1)
+dirToVector DUpRight   = (1, 1)
+dirToVector DDownLeft  = (-1, -1)
+dirToVector DDownRight = (1, -1)
+
+-- Convert movement vector to Direction (8 directions)
+vectorToDirection :: (Float, Float) -> Direction
+vectorToDirection (dx, dy)
+  | dx > 0.3 && dy > 0.3   = DUpRight
+  | dx < -0.3 && dy > 0.3  = DUpLeft
+  | dx > 0.3 && dy < -0.3  = DDownRight
+  | dx < -0.3 && dy < -0.3 = DDownLeft
+  | dy > 0.3               = DUp
+  | dy < -0.3              = DDown
+  | dx < -0.3              = DLeft
+  | dx > 0.3               = DRight
+  | otherwise              = DUp  -- Default
 
 clamp :: Float -> Float -> Float -> Float
 clamp x a b = max a (min b x)

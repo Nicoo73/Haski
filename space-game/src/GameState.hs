@@ -17,7 +17,8 @@ import Wave
 -- DIRECCIONES
 -------------------------------------------------------------
 
-data Direction = DUp | DDown | DLeft | DRight
+data Direction = DUp | DDown | DLeft | DRight 
+               | DUpLeft | DUpRight | DDownLeft | DDownRight
   deriving (Eq, Show)
 
 

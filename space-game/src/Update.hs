@@ -7,6 +7,8 @@ import Enemy
 import Wave
 import Input (updateGameState, dirToVector)
 import Data.List (partition)
+import System.Random (randomRIO)
+import System.IO.Unsafe (unsafePerformIO)  -- Para IO en contexto puro
 
 -------------------------------------------------------------
 -- LÓGICA DE ACTUALIZACIÓN DEL MUNDO
@@ -25,11 +27,20 @@ updateWorld dt gs =
     allEnemies = enemies gsPlayerMoved ++ spawned
     movedEnemies = map (updateEnemy dt (playerPos gsPlayerMoved) allEnemies) allEnemies
     
+    -- 3.5. DISPARO DE ENEMIGOS: Procesa qué enemigos disparan
+    (updatedEnemies, newEnemyBullets) = processEnemyShooting dt (playerPos gsPlayerMoved) movedEnemies
+    allEnemyBullets = enemyBullets gsPlayerMoved ++ newEnemyBullets
+    
     -- 4. MOVIMIENTO DE PROYECTILES: Mueve las balas y limpia las que salen.
     movedBullets = updateBullets dt gsPlayerMoved
+    movedEnemyBullets = updateEnemyBullets dt allEnemyBullets
     
     -- 5. COLISIONES: Revisa colisiones entre proyectiles y enemigos.
-    (finalBullets, finalEnemies) = checkCollisions movedBullets movedEnemies
+    (finalBullets, finalEnemies) = checkCollisions movedBullets updatedEnemies
+    
+    -- 5.5. COLISIONES CON JUGADOR: Revisa colisiones entre proyectiles enemigos y jugador
+    (finalEnemyBullets, damageToPlayer) = checkPlayerCollisions movedEnemyBullets (playerPos gsPlayerMoved)
+    newPlayerHealth = max 0 (currentHealth gsPlayerMoved - damageToPlayer)
 
     -- 6. LÓGICA DE AVANCE DE OLEADA: Verifica si la oleada terminó.
     -- El estado actual de la oleada es 'newWave' (el resultado de spawnWaveIfNeeded)
@@ -46,8 +57,10 @@ updateWorld dt gs =
   in gsPlayerMoved { 
        enemies = finalEnemies,
        bullets = finalBullets,
+       enemyBullets = finalEnemyBullets,
        wave    = newWaveState,
-       waveCount = newWaveCount
+       waveCount = newWaveCount,
+       currentHealth = newPlayerHealth
      }
 
 -------------------------------------------------------------
@@ -73,6 +86,72 @@ updateBullets dt gs@GameState{ bullets = bs, windowSize = (winW, winH) } =
     movedBullets = map moveBullet bs
   in filter (not . isOffScreen) movedBullets
 
+-------------------------------------------------------------
+-- LÓGICA DE DISPARO DE ENEMIGOS
+-------------------------------------------------------------
+
+-- Procesa los disparos de enemigos
+processEnemyShooting :: Float -> (Float, Float) -> [Enemy] -> ([Enemy], [EnemyBullet])
+processEnemyShooting dt playerPos enemies =
+  let results = map (processEnemyShot dt playerPos) enemies
+      updatedEnemies = map fst results
+      allNewBullets = concatMap snd results
+  in (updatedEnemies, allNewBullets)
+
+-- Procesa el disparo de un enemigo individual
+processEnemyShot :: Float -> (Float, Float) -> Enemy -> (Enemy, [EnemyBullet])
+processEnemyShot dt (px, py) enemy =
+  let (ex, ey) = enemyPos enemy
+      dx = px - ex
+      dy = py - ey
+      distToPlayer = sqrt (dx*dx + dy*dy)
+      
+      -- Solo dispara si está en rango
+      inRange = distToPlayer <= enemyShootRange enemy
+      
+  in if inRange
+     then
+       -- Usar unsafePerformIO para manejar IO en contexto puro
+       let (shouldShoot, updatedEnemy) = unsafePerformIO (shouldEnemyShoot dt enemy)
+       in if shouldShoot
+          then
+            -- Calcular dirección hacia el jugador
+            let shootDir = vectorToDirection (dx / distToPlayer, dy / distToPlayer)
+                newBullet = EnemyBullet
+                  { eBulletPos = enemyPos enemy
+                  , eBulletDir = shootDir
+                  , eBulletSpeed = enemyBulletSpd enemy
+                  , eBulletDamage = enemyDamage enemy
+                  }
+            in (updatedEnemy, [newBullet])
+          else (updatedEnemy, [])
+     else (enemy, [])
+
+-- Mueve las balas enemigas
+updateEnemyBullets :: Float -> [EnemyBullet] -> [EnemyBullet]
+updateEnemyBullets dt bullets =
+  let terrainW = 640.0  -- Actualizado
+      terrainH = 360.0
+      mapX = terrainW / 2
+      mapY = terrainH / 2
+      
+      moveEnemyBullet eb@EnemyBullet{ eBulletPos = (px, py), eBulletDir = dir, eBulletSpeed = speed } =
+        let (vx, vy) = dirToVector dir
+            newX = px + vx * speed * dt
+            newY = py + vy * speed * dt
+        in eb { eBulletPos = (newX, newY) }
+      
+      isOffScreen eb =
+        let (x, y) = eBulletPos eb
+        in x < -mapX || x > mapX || y < -mapY || y > mapY
+      
+      movedBullets = map moveEnemyBullet bullets
+  in filter (not . isOffScreen) movedBullets
+
+-------------------------------------------------------------
+-- LÓGICA DE COLISIONES
+-------------------------------------------------------------
+
 checkCollisions :: [Bullet] -> [Enemy] -> ([Bullet], [Enemy])
 checkCollisions bullets enemies =
   let
@@ -92,3 +171,31 @@ checkCollisions bullets enemies =
       ) ([], enemies) bullets
       
   in (survivingBullets, survivingEnemies)
+
+-------------------------------------------------------------
+-- LÓGICA DE COLISIONES CON EL JUGADOR
+-------------------------------------------------------------
+
+-- Verifica colisiones entre balas enemigas y el jugador
+-- Retorna las balas que no colisionaron y el daño total recibido
+checkPlayerCollisions :: [EnemyBullet] -> (Float, Float) -> ([EnemyBullet], Int)
+checkPlayerCollisions enemyBullets playerPos =
+  let
+    playerRadius = 8.0  -- Radio del jugador (mitad de 16px)
+    bulletRadius = 3.0  -- Radio de la bala enemiga
+    collisionDistSq = (playerRadius + bulletRadius) ^ 2
+    
+    (px, py) = playerPos
+    
+    isCollidingWithPlayer eBullet =
+      let (bx, by) = eBulletPos eBullet
+          distSq = (bx - px)^2 + (by - py)^2
+      in distSq < collisionDistSq
+    
+    -- Separar balas que colisionan de las que no
+    (hits, misses) = Data.List.partition isCollidingWithPlayer enemyBullets
+    
+    -- Calcular daño total de todas las balas que impactaron
+    totalDamage = sum (map eBulletDamage hits)
+    
+  in (misses, totalDamage)

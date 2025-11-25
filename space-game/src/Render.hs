@@ -16,15 +16,16 @@ import Enemy
 render :: Assets -> GameState -> Picture
 render assets gs =
     pictures [ scaledBackground
-             , drawEnemies gs
+             , drawEnemies assets gs
              , drawBullets gs
+             , drawEnemyBullets gs
              , scaledPlayer
              ]
   where
     -- Escala según el ancho de la ventana
     (winW, winH) = windowSize gs
 
-    terrainW = 480.0
+    terrainW = 640.0  -- Actualizado
     terrainH = 360.0
     -- Use minimum scale to ensure terrain fits in both dimensions
     scaleW = fromIntegral winW / terrainW
@@ -67,7 +68,7 @@ drawBullets :: GameState -> Picture
 drawBullets gs = pictures (map drawBullet (bullets gs))
   where
     (winW, winH) = windowSize gs
-    terrainW = 480.0
+    terrainW = 640.0  -- Actualizado
     terrainH = 360.0
     scaleW = fromIntegral winW / terrainW
     scaleH = fromIntegral winH / terrainH
@@ -79,16 +80,41 @@ drawBullets gs = pictures (map drawBullet (bullets gs))
              color yellow (circleSolid 3) -- Dibujar un punto amarillo (3 píxeles)
 
 -------------------------------------------------------------
+-- RENDER DE PROYECTILES ENEMIGOS
+-------------------------------------------------------------
+
+drawEnemyBullets :: GameState -> Picture
+drawEnemyBullets gs = pictures (map drawEnemyBullet (enemyBullets gs))
+  where
+    (winW, winH) = windowSize gs
+    terrainW = 640.0  -- Actualizado
+    terrainH = 360.0
+    scaleW = fromIntegral winW / terrainW
+    scaleH = fromIntegral winH / terrainH
+    scaleF = min scaleW scaleH
+
+    drawEnemyBullet eBullet =
+        let (x, y) = eBulletPos eBullet
+        in translate (x * scaleF) (y * scaleF) $ scale scaleF scaleF $
+             color red (circleSolid 3) -- Dibujar un punto rojo (3 píxeles)
+
+-------------------------------------------------------------
 -- RENDER DE ENEMIGOS
 -------------------------------------------------------------
 
-drawEnemies :: GameState -> Picture
-drawEnemies gs = pictures (map drawEnemy (enemies gs))
+drawEnemies :: Assets -> GameState -> Picture
+drawEnemies assets gs = pictures (map drawEnemy (enemies gs))
   where
-    (winW, _) = windowSize gs
-    scaleF = fromIntegral winW / 800.0
+    (winW, winH) = windowSize gs
+    terrainW = 640.0  -- Actualizado
+    terrainH = 360.0
+    scaleW = fromIntegral winW / terrainW
+    scaleH = fromIntegral winH / terrainH
+    scaleF = min scaleW scaleH
 
     drawEnemy enemy =
         let (x, y) = enemyPos enemy
-        in translate x y $ scale scaleF scaleF $
-             color red (circleSolid 12)
+            enemySprite = case enemyType enemy of
+              Caza -> aCazaSprite assets
+            -- Sprite estático sin rotación
+        in translate (x * scaleF) (y * scaleF) $ scale scaleF scaleF $ enemySprite

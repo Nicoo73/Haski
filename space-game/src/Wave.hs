@@ -1,21 +1,11 @@
 module Wave
-  ( Wave(..)
-  , initialWave
-  , spawnWaveIfNeeded
-  , nextWave        -- Exportado para que Update.hs pueda avanzar la oleada
-  , enemiesForWave  -- Exportado para referencia futura
+  ( spawnWaveIfNeeded
+  , nextWave
+  , enemiesForWave
   ) where
 
 import Enemy
-
--------------------------------------------------------------
--- TIPOS Y CONSTANTES
--------------------------------------------------------------
-
-data Wave = Wave
-  { enemiesLeft    :: Int      -- Enemigos restantes por generar
-  , timeSinceSpawn :: Float    -- Tiempo desde que se generó el último enemigo
-  } deriving (Show)
+import GameState (PlayerStats(..), playerStats, Wave(..), playerRange)
 
 -------------------------------------------------------------
 -- LÓGICA DE PROGRESIÓN DE OLEADAS
@@ -33,9 +23,6 @@ nextWave nextWaveNum = Wave
   , timeSinceSpawn = 0
   }
 
-initialWave :: Wave
-initialWave = nextWave 1 -- La oleada inicial es la Oleada 1 (20 enemigos)
-
 -------------------------------------------------------------
 -- LÓGICA DE SPAWN
 -------------------------------------------------------------
@@ -45,6 +32,6 @@ spawnWaveIfNeeded :: Float -> Wave -> ([Enemy], Wave)
 spawnWaveIfNeeded dt wave =
   let newTime = timeSinceSpawn wave + dt
   in if enemiesLeft wave > 0 && newTime >= 1 -- Genera uno cada 1 segundo
-       then let enemy = Enemy { enemyPos = (0,200), enemySpeed = 60 }
+       then let enemy = createCaza (0, 200) (playerMoveSpeed playerStats) (playerBulletSpeed playerStats) playerRange
             in ([enemy], wave { enemiesLeft = enemiesLeft wave - 1, timeSinceSpawn = 0 })
        else ([], wave { timeSinceSpawn = newTime })

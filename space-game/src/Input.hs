@@ -1,6 +1,3 @@
--- Input.hs
--- Handle keyboard input, player movement, and enemy/wave updates
-
 module Input
   ( handleEvent
   , updateGameState
@@ -14,61 +11,92 @@ import qualified Enemy as E
 import Wave
 
 -------------------------------------------------------------
--- EVENTOS DE TECLAS
+-- CONSTANTES DEL BOTÓN (Deben coincidir con Render.hs)
+-------------------------------------------------------------
+
+buttonX, buttonY :: Float
+buttonX = 0.0
+buttonY = -80.0  -- Posición vertical del botón
+
+buttonW, buttonH :: Float
+buttonW = 200.0
+buttonH = 50.0
+
+-------------------------------------------------------------
+-- EVENTOS
 -------------------------------------------------------------
 
 handleEvent :: Event -> GameState -> GameState
-handleEvent (EventKey (Char c) keyState _ _) gs = case (c, keyState) of
-  ('w', Down) -> addKey DUp gs
-  ('a', Down) -> addKey DLeft gs
-  ('s', Down) -> addKey DDown gs
-  ('d', Down) -> addKey DRight gs
-  ('w', Up)   -> removeKey DUp gs
-  ('a', Up)   -> removeKey DLeft gs
-  ('s', Up)   -> removeKey DDown gs
-  ('d', Up)   -> removeKey DRight gs
-  (' ', Down) -> shootBullet gs  -- DISPAROS
-  _           -> gs
+-- 1. Clic en el Menú
+handleEvent (EventKey (MouseButton LeftButton) Down _ (mx, my)) gs 
+  | currentScreen gs == Menu = handleMenuClick mx my gs
 
--- ¡ESTA LÍNEA DEBE EXISTIR SI OCURRE UN FALLO SILENCIOSO EN LA DETECCIÓN!
-handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs = shootBullet gs
+-- 2. Teclas de Juego (Solo funcionan si estamos en Playing)
+handleEvent (EventKey (Char c) keyState _ _) gs 
+  | currentScreen gs == Playing = case (c, keyState) of
+    ('w', Down) -> addKey DUp gs
+    ('a', Down) -> addKey DLeft gs
+    ('s', Down) -> addKey DDown gs
+    ('d', Down) -> addKey DRight gs
+    ('w', Up)   -> removeKey DUp gs
+    ('a', Up)   -> removeKey DLeft gs
+    ('s', Up)   -> removeKey DDown gs
+    ('d', Up)   -> removeKey DRight gs
+    (' ', Down) -> shootBullet gs
+    _           -> gs
 
+-- 3. Disparo con Espacio
+handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs 
+  | currentScreen gs == Playing = shootBullet gs
+
+-- 4. Resize de ventana
 handleEvent (EventResize newSize) gs =
   gs { windowSize = newSize }
 
 handleEvent _ gs = gs
 
+-------------------------------------------------------------
+-- LÓGICA DE MENÚ (Clic en botón)
+-------------------------------------------------------------
 
--- NUEVA FUNCIÓN: DISPAROS (ACTUALIZADA)
+handleMenuClick :: Float -> Float -> GameState -> GameState
+handleMenuClick mx my gs
+  | isInsideButton mx my = gs { currentScreen = Playing } -- ¡Cambia a Jugar!
+  | otherwise = gs
+  where
+    isInsideButton x y =
+      x >= buttonX - buttonW / 2 &&
+      x <= buttonX + buttonW / 2 &&
+      y >= buttonY - buttonH / 2 &&
+      y <= buttonY + buttonH / 2
+
+-------------------------------------------------------------
+-- FUNCIONES DE JUEGO
+-------------------------------------------------------------
+
 shootBullet :: GameState -> GameState
 shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs, currentStats = cs } =
   let 
-    totalDamage = playerDamage cs + playerDamageBonus cs -- Daño base + Bonus
+    totalDamage = playerDamage cs + playerDamageBonus cs 
     newBullet = Bullet { 
         bulletPos   = pPos, 
         bulletDir   = pDir, 
-        bulletSpeed = playerBulletSpeed cs, -- Usar velocidad de bala actual
-        bulletDamage = totalDamage          -- La bala lleva el daño total
+        bulletSpeed = playerBulletSpeed cs, 
+        bulletDamage = totalDamage          
     }
   in gs { bullets = newBullet : bs }
 
 -------------------------------------------------------------
--- UPDATE GENERAL DEL JUEGO
+-- UPDATE GAME STATE (Solo mueve al jugador)
 -------------------------------------------------------------
 
 updateGameState :: Float -> GameState -> GameState
 updateGameState dt =
-      updatePlayer dt       -- mover jugador
-  .   updateBullets dt      -- mover proyectiles del jugador
-  .   updateEnemyBullets dt -- mover proyectiles de enemigos
- --   . updateEnemies dt      -- mover enemigos
- -- . updateWave dt         -- spawnear enemigos
-   
+      updatePlayer dt       
+  .   updateBullets dt      
+  .   updateEnemyBullets dt 
 
--------------------------------------------------------------
--- SISTEMA DE MOVIMIENTO DEL JUGADOR (ACTUALIZADO)
--------------------------------------------------------------
-
+-- Movimiento del jugador
 updatePlayer :: Float -> GameState -> GameState
 updatePlayer dt gs@GameState{ currentStats = cs } = gs
   { playerPos = newPos
@@ -79,15 +107,13 @@ updatePlayer dt gs@GameState{ currentStats = cs } = gs
     keys = keysDown gs
     (dx, dy) = foldr addVector (0, 0) (map dirToVector keys)
     
-    -- Determine facing direction based on movement vector (8 directions)
     newDir = if dx == 0 && dy == 0
-             then playerDir gs  -- No movement, keep current direction
+             then playerDir gs 
              else vectorToDirection (dx, dy)
 
     magnitude = sqrt (dx*dx + dy*dy)
     (ndx, ndy) = if magnitude > 0 then (dx/magnitude, dy/magnitude) else (0,0)
 
-    -- Velocidad total: base + bonus de ítems
     totalMoveSpeed = playerMoveSpeed cs + playerSpeedBonus cs
     
     moveX = ndx * totalMoveSpeed * dt
@@ -95,10 +121,9 @@ updatePlayer dt gs@GameState{ currentStats = cs } = gs
 
     (px, py) = playerPos gs
 
-    terrainW = 640.0  -- Actualizado al nuevo ancho
+    terrainW = 640.0  
     terrainH = 360.0
-    margin = 16.0  -- Margen para evitar pegarse al borde
-    -- Ajustar límites Y para dar más espacio (usar todo el terreno disponible)
+    margin = 16.0  
     minX = -terrainW / 2 + margin
     maxX = terrainW / 2 - margin
     minY = -terrainH / 2 + margin
@@ -110,18 +135,11 @@ updatePlayer dt gs@GameState{ currentStats = cs } = gs
 
     addVector (a,b) (c,d) = (a+c, b+d)
 
--------------------------------------------------------------
--- SISTEMA DE PROYECTILES
--------------------------------------------------------------
-
--- ... (Resto de updateBullets y updateEnemyBullets sin cambios significativos en Input.hs) ...
-
+-- Movimiento de balas del jugador
 updateBullets :: Float -> GameState -> GameState
 updateBullets dt gs@GameState{ bullets = bs } =
   gs { bullets = filter inBounds (map (moveBullet dt) bs) }
   where
-    -- Move bullet based on its direction and speed
-    moveBullet :: Float -> Bullet -> Bullet
     moveBullet deltaTime bullet =
       let (bx, by) = bulletPos bullet
           dir = bulletDir bullet
@@ -131,25 +149,18 @@ updateBullets dt gs@GameState{ bullets = bs } =
           newY = by + dy * speed * deltaTime
       in bullet { bulletPos = (newX, newY) }
     
-    -- Check if bullet is still within terrain bounds
-    inBounds :: Bullet -> Bool
     inBounds bullet =
       let (bx, by) = bulletPos bullet
-          terrainW = 480.0
+          terrainW = 640.0
           terrainH = 360.0
-          margin = 50.0  -- Extra margin before removing bullet
+          margin = 50.0  
       in abs bx < (terrainW / 2 + margin) && abs by < (terrainH / 2 + margin)
 
--------------------------------------------------------------
--- SISTEMA DE PROYECTILES ENEMIGOS
--------------------------------------------------------------
-
+-- Movimiento de balas enemigas
 updateEnemyBullets :: Float -> GameState -> GameState
 updateEnemyBullets dt gs@GameState{ enemyBullets = ebs } =
   gs { enemyBullets = filter inBounds (map (moveEnemyBullet dt) ebs) }
   where
-    -- Move enemy bullet based on its direction and speed
-    moveEnemyBullet :: Float -> EnemyBullet -> EnemyBullet
     moveEnemyBullet deltaTime eBullet =
       let (bx, by) = eBulletPos eBullet
           dir = eBulletDir eBullet
@@ -159,11 +170,9 @@ updateEnemyBullets dt gs@GameState{ enemyBullets = ebs } =
           newY = by + dy * speed * deltaTime
       in eBullet { eBulletPos = (newX, newY) }
     
-    -- Check if bullet is still within terrain bounds
-    inBounds :: EnemyBullet -> Bool
     inBounds eBullet =
       let (bx, by) = eBulletPos eBullet
-          terrainW = 480.0
+          terrainW = 640.0
           terrainH = 360.0
           margin = 50.0
       in abs bx < (terrainW / 2 + margin) && abs by < (terrainH / 2 + margin)

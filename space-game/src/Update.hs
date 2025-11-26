@@ -6,138 +6,90 @@ import GameState
 import Enemy
 import Wave
 import Input (updateGameState, dirToVector)
-import Item -- IMPORTADO: Para usar el módulo Item
+import Item 
 import Data.List (partition)
-import System.Random (randomRIO)
-import System.IO.Unsafe (unsafePerformIO)  -- Para IO en contexto puro
+import System.IO.Unsafe (unsafePerformIO)
 
 -------------------------------------------------------------
--- LÓGICA DE ACTUALIZACIÓN DEL MUNDO (MODIFICADO)
+-- LÓGICA PRINCIPAL
 -------------------------------------------------------------
 
 updateWorld :: Float -> GameState -> GameState
 updateWorld dt gs =
   let
-    -- 1. ACTUALIZA EL JUGADOR: Mueve al jugador y actualiza el tiempo.
+    -- 1. Mover Jugador
     gsPlayerMoved = updateGameState dt gs
     
-    -- 2. SPAWN DE ENEMIGOS: Genera enemigos (actualiza el contador de la oleada)
+    -- 2. Spawn Enemigos
     (spawned, newWave) = spawnWaveIfNeeded dt (wave gsPlayerMoved)
     
-    -- 3. MOVIMIENTO DE ENEMIGOS: Prepara la lista completa y los mueve (incluyendo lógica de Separación)
+    -- 3. Mover Enemigos
     allEnemies = enemies gsPlayerMoved ++ spawned
     movedEnemies = map (updateEnemy dt (playerPos gsPlayerMoved) allEnemies) allEnemies
     
-    -- 3.5. DISPARO DE ENEMIGOS: Procesa qué enemigos disparan
+    -- 4. Disparo Enemigos
     (updatedEnemies, newEnemyBullets) = processEnemyShooting dt (playerPos gsPlayerMoved) movedEnemies
     allEnemyBullets = enemyBullets gsPlayerMoved ++ newEnemyBullets
     
-    -- 4. MOVIMIENTO DE PROYECTILES: Mueve las balas y limpia las que salen.
+    -- 5. Mover Balas (Jugador y Enemigo)
     movedBullets = updateBullets dt gsPlayerMoved
     movedEnemyBullets = updateEnemyBullets dt allEnemyBullets
     
-    -- 5. COLISIONES: Revisa colisiones entre proyectiles y enemigos.
-    -- NUEVO: checkCollisions ahora devuelve los ítems dropeados.
+    -- 6. Colisiones: Bala Jugador vs Enemigo (Dropea Items)
     (finalBullets, finalEnemies, droppedItems) = checkCollisions movedBullets updatedEnemies
     
-    -- 5.5. COLISIONES CON JUGADOR: Revisa colisiones entre proyectiles enemigos y jugador
+    -- 7. Colisiones: Bala Enemigo vs Jugador (Calculamos daño)
     (finalEnemyBullets, damageToPlayer) = checkPlayerCollisions movedEnemyBullets (playerPos gsPlayerMoved)
-    newPlayerHealth = max 0 (currentHealth gsPlayerMoved - damageToPlayer)
+    
+    -- Vida temporal después del daño (pero antes de curar)
+    healthAfterDamage = max 0 (currentHealth gsPlayerMoved - damageToPlayer)
 
-    -- 5.6. RECOLECCIÓN DE ITEMS (Jugador vs Items) -- NUEVO
+    -- 8. Recolección de Items (Curación y Buffs)
+    -- Creamos un estado base que YA TIENE el daño aplicado
+    gsWithDamage = gsPlayerMoved { currentHealth = healthAfterDamage }
+    
     currentItems = items gsPlayerMoved ++ droppedItems
-    (remainingItems, gsItemsApplied) = checkItemCollection (playerPos gsPlayerMoved) currentItems gsPlayerMoved
+    
+    -- checkItemCollection toma 'gsWithDamage' y le suma la curación si recoge ítems
+    -- El resultado 'gsItemsApplied' tiene la vida final correcta (Vida - Daño + Curación)
+    (remainingItems, gsItemsApplied) = checkItemCollection (playerPos gsPlayerMoved) currentItems gsWithDamage
 
-    -- 6. LÓGICA DE AVANCE DE OLEADA: Verifica si la oleada terminó.
+    -- 9. Avanzar Oleada
     isWaveFinished = null finalEnemies && enemiesLeft newWave == 0
     
-    -- 7. CALCULAR LA PRÓXIMA OLEADA
     (newWaveState, newWaveCount) = if isWaveFinished
                                        then (nextWave (waveCount gsPlayerMoved + 1), waveCount gsPlayerMoved + 1)
                                        else (newWave, waveCount gsPlayerMoved)
     
-    -- 8. DEVOLVER EL ESTADO FINAL
-    -- Usar gsItemsApplied que ya tiene los nuevos currentStats
+  -- 10. DEVOLVER EL ESTADO FINAL
+  -- Usamos gsItemsApplied porque contiene la vida actualizada correctamente.
+  -- SOLO actualizamos los campos que cambiaron independientemente (enemigos, balas, oleada).
   in gsItemsApplied { 
        enemies = finalEnemies,
        bullets = finalBullets,
        enemyBullets = finalEnemyBullets,
-       items   = remainingItems, -- Ítems restantes en el mapa
+       items   = remainingItems,
        wave    = newWaveState,
-       waveCount = newWaveCount,
-       currentHealth = newPlayerHealth
+       waveCount = newWaveCount
+       -- ¡IMPORTANTE! NO agregues 'currentHealth = ...' aquí, o borrarás la curación.
      }
 
 -------------------------------------------------------------
--- LÓGICA DE MOVIMIENTO DE PROYECTILES (Mismas funciones que antes)
+-- AUXILIARES (Movimiento y Colisiones)
 -------------------------------------------------------------
--- ... (updateBullets y updateEnemyBullets permanecen iguales) ...
 
 updateBullets :: Float -> GameState -> [Bullet]
 updateBullets dt gs@GameState{ bullets = bs, windowSize = (winW, winH) } =
-  let
-    mapX = fromIntegral winW / 2
-    mapY = fromIntegral winH / 2
+  let mapX = fromIntegral winW / 2; mapY = fromIntegral winH / 2
+      moveBullet b@Bullet{ bulletPos = (px, py), bulletDir = dir, bulletSpeed = speed } =
+        let (vx, vy) = dirToVector dir
+        in b { bulletPos = (px + vx * speed * dt, py + vy * speed * dt) }
+      isOffScreen b = let (x, y) = bulletPos b in x < -mapX || x > mapX || y < -mapY || y > mapY
+  in filter (not . isOffScreen) (map moveBullet bs)
 
-    moveBullet b@Bullet{ bulletPos = (px, py), bulletDir = dir, bulletSpeed = speed } =
-      let (vx, vy) = dirToVector dir
-          newX = px + vx * speed * dt
-          newY = py + vy * speed * dt
-      in b { bulletPos = (newX, newY) }
-
-    isOffScreen b =
-      let (x, y) = bulletPos b
-      in x < -mapX || x > mapX || y < -mapY || y > mapY
-      
-    movedBullets = map moveBullet bs
-  in filter (not . isOffScreen) movedBullets
-
--------------------------------------------------------------
--- LÓGICA DE DISPARO DE ENEMIGOS
--------------------------------------------------------------
--- ... (processEnemyShooting y processEnemyShot permanecen iguales) ...
-
--- Procesa los disparos de enemigos
-processEnemyShooting :: Float -> (Float, Float) -> [Enemy] -> ([Enemy], [EnemyBullet])
-processEnemyShooting dt playerPos enemies =
-  let results = map (processEnemyShot dt playerPos) enemies
-      updatedEnemies = map fst results
-      allNewBullets = concatMap snd results
-  in (updatedEnemies, allNewBullets)
-
--- Procesa el disparo de un enemigo individual
-processEnemyShot :: Float -> (Float, Float) -> Enemy -> (Enemy, [EnemyBullet])
-processEnemyShot dt (px, py) enemy =
-  let (ex, ey) = enemyPos enemy
-      dx = px - ex
-      dy = py - ey
-      distToPlayer = sqrt (dx*dx + dy*dy)
-      
-      -- Solo dispara si está en rango
-      inRange = distToPlayer <= enemyShootRange enemy
-      
-  in if inRange
-     then
-       -- Usar unsafePerformIO para manejar IO en contexto puro
-       let (shouldShoot, updatedEnemy) = unsafePerformIO (shouldEnemyShoot dt enemy)
-       in if shouldShoot
-          then
-            -- Calcular dirección hacia el jugador
-            let shootDir = vectorToDirection (dx / distToPlayer, dy / distToPlayer)
-                newBullet = EnemyBullet
-                  { eBulletPos = enemyPos enemy
-                  , eBulletDir = shootDir
-                  , eBulletSpeed = enemyBulletSpd enemy
-                  , eBulletDamage = enemyDamage enemy
-                  }
-            in (updatedEnemy, [newBullet])
-          else (updatedEnemy, [])
-     else (enemy, [])
-
--- Mueve las balas enemigas
 updateEnemyBullets :: Float -> [EnemyBullet] -> [EnemyBullet]
 updateEnemyBullets dt bullets =
-  let terrainW = 640.0  -- Actualizado
+  let terrainW = 640.0 
       terrainH = 360.0
       mapX = terrainW / 2
       mapY = terrainH / 2
@@ -152,96 +104,57 @@ updateEnemyBullets dt bullets =
         let (x, y) = eBulletPos eb
         in x < -mapX || x > mapX || y < -mapY || y > mapY
       
-      movedBullets = map moveEnemyBullet bullets
-  in filter (not . isOffScreen) bullets
+  in filter (not . isOffScreen) (map moveEnemyBullet bullets)
 
+-- PROCESAR DISPARO ENEMIGO
+processEnemyShooting :: Float -> (Float, Float) -> [Enemy] -> ([Enemy], [EnemyBullet])
+processEnemyShooting dt playerPos enemies =
+  let results = map (processEnemyShot dt playerPos) enemies
+  in (map fst results, concatMap snd results)
 
--------------------------------------------------------------
--- LÓGICA DE COLISIONES (MODIFICADA: Devuelve Items)
--------------------------------------------------------------
+processEnemyShot :: Float -> (Float, Float) -> Enemy -> (Enemy, [EnemyBullet])
+processEnemyShot dt (px, py) enemy =
+  let (ex, ey) = enemyPos enemy
+      dx = px - ex; dy = py - ey; dist = sqrt (dx*dx + dy*dy)
+  in if dist <= enemyShootRange enemy
+     then let (shouldShoot, updatedEnemy) = unsafePerformIO (shouldEnemyShoot dt enemy)
+          in if shouldShoot
+             then (updatedEnemy, [EnemyBullet (enemyPos enemy) (vectorToDirection (dx/dist, dy/dist)) (enemyBulletSpd enemy) (enemyDamage enemy)])
+             else (updatedEnemy, [])
+     else (enemy, [])
 
+-- COLISIONES
 checkCollisions :: [Bullet] -> [Enemy] -> ([Bullet], [Enemy], [Item])
 checkCollisions bullets enemies =
-  let
-    collisionDistSq = (3.0 + 12.0) ^ 2 
-
-    isColliding bullet enemy =
-      let (bx, by) = bulletPos bullet
-          (ex, ey) = enemyPos enemy
-          distSq = (bx - ex)^2 + (by - ey)^2
-      in distSq < collisionDistSq
-
-    -- Ahora, si una bala golpea, se desecha y el enemigo también (1 hit kill)
-    (survivingBullets, survivingEnemies, droppedItems) = foldr (\bullet (bs, es, accItems) ->
-        let (hits, misses) = Data.List.partition (isColliding bullet) es
-            -- Por cada enemigo 'hit' se intenta generar un ítem
-            newItems = [ item | enemy <- hits, Just item <- [spawnItemPure (enemyPos enemy)] ]
-        in if null hits
-           then (bullet : bs, es, accItems)
-           else (bs, misses, accItems ++ newItems) -- La bala desaparece, el enemigo desaparece
-      ) ([], enemies, []) bullets
-      
+  let collisionDistSq = (3.0 + 12.0) ^ 2 
+      isColliding b e = let (bx,by) = bulletPos b; (ex,ey) = enemyPos e in (bx-ex)^2 + (by-ey)^2 < collisionDistSq
+      (survivingBullets, survivingEnemies, droppedItems) = foldr (\b (bs, es, accI) ->
+          let (hits, misses) = Data.List.partition (isColliding b) es
+              newItems = [ item | enemy <- hits, Just item <- [spawnItemPure (enemyPos enemy)] ]
+          in if null hits then (b:bs, es, accI) else (bs, misses, accI ++ newItems)
+        ) ([], enemies, []) bullets
   in (survivingBullets, survivingEnemies, droppedItems)
 
--------------------------------------------------------------
--- LÓGICA DE COLISIONES CON EL JUGADOR
--------------------------------------------------------------
--- ... (checkPlayerCollisions permanece igual) ...
-
--- Verifica colisiones entre balas enemigas y el jugador
--- Retorna las balas que no colisionaron y el daño total recibido
 checkPlayerCollisions :: [EnemyBullet] -> (Float, Float) -> ([EnemyBullet], Int)
-checkPlayerCollisions enemyBullets playerPos =
-  let
-    playerRadius = 8.0  -- Radio del jugador (mitad de 16px)
-    bulletRadius = 3.0  -- Radio de la bala enemiga
-    collisionDistSq = (playerRadius + bulletRadius) ^ 2
-    
-    (px, py) = playerPos
-    
-    isCollidingWithPlayer eBullet =
-      let (bx, by) = eBulletPos eBullet
-          distSq = (bx - px)^2 + (by - py)^2
-      in distSq < collisionDistSq
-    
-    -- Separar balas que colisionan de las que no
-    (hits, misses) = Data.List.partition isCollidingWithPlayer enemyBullets
-    
-    -- Calcular daño total de todas las balas que impactaron
-    totalDamage = sum (map eBulletDamage hits)
-    
-  in (misses, totalDamage)
-
--------------------------------------------------------------
--- RECOLECCIÓN DE ITEMS: JUGADOR vs ITEMS (NUEVO)
--------------------------------------------------------------
+checkPlayerCollisions ebs (px, py) =
+  let colDistSq = (8.0 + 3.0) ^ 2
+      isHit eb = let (bx,by) = eBulletPos eb in (bx-px)^2 + (by-py)^2 < colDistSq
+      (hits, misses) = Data.List.partition isHit ebs
+  in (misses, sum (map eBulletDamage hits))
 
 checkItemCollection :: (Float, Float) -> [Item] -> GameState -> ([Item], GameState)
-checkItemCollection (px, py) currentItems gs =
-  let
-    -- Usamos el RANGO DE RECOLECCIÓN, que es más grande que el radio físico.
-    pickupRadius = playerPickupRange 
-    
-    isTouching item =
-       let (ix, iy) = itemPos item
-           r = itemRadius item
-           dx = px - ix
-           dy = py - iy
-           distSq = dx*dx + dy*dy                 -- Distancia al cuadrado
-           minDist = pickupRadius + r             -- Se usa pickupRadius aquí
-       in distSq < minDist * minDist               
-    
-    (collected, remaining) = partition isTouching currentItems
-    
-    -- Aplicar efectos de todos los items recogidos
-    gsAfterEffects = foldr applyItemEffect gs collected
-    
-  in (remaining, gsAfterEffects)
+checkItemCollection (px, py) items gs =
+  let distSq i = let (ix,iy) = itemPos i in (px-ix)^2 + (py-iy)^2
+      minDistSq i = (playerPickupRange + itemRadius i) ^ 2
+      (collected, remaining) = partition (\i -> distSq i < minDistSq i) items
+      gsNew = foldr applyItemEffect gs collected
+  in (remaining, gsNew)
 
--- Aplica el efecto de un solo item al GameState
+-- APLICAR EFECTO DEL ÍTEM
 applyItemEffect :: Item -> GameState -> GameState
 applyItemEffect item gs@GameState{ currentStats = cs } = 
   case itemType item of
-    HealSmall   -> gs { currentHealth = min (playerHealth cs) (currentHealth gs + 2) } -- Curar 2 HP
-    SpeedBoost  -> gs { currentStats = cs { playerSpeedBonus = playerSpeedBonus cs + 25.0 } } -- +25 velocidad
-    DamageBoost -> gs { currentStats = cs { playerDamageBonus = playerDamageBonus cs + 1 } } -- +1 daño
+    -- Cura 20 de vida, respetando el máximo definido en playerHealth de los stats
+    HealSmall   -> gs { currentHealth = min (playerHealth cs) (currentHealth gs + 20) }
+    SpeedBoost  -> gs { currentStats = cs { playerSpeedBonus = playerSpeedBonus cs + 25.0 } } 
+    DamageBoost -> gs { currentStats = cs { playerDamageBonus = playerDamageBonus cs + 1 } }

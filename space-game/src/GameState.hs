@@ -116,7 +116,7 @@ terrainHeight = 360.0
 
 playerStats :: PlayerStats
 playerStats = PlayerStats
-  { playerHealth      = 10
+  { playerHealth      = 100
   , playerDamage      = 2
   , playerMoveSpeed   = 200.0 
   , playerBulletSpeed = 400.0 

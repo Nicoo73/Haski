@@ -12,14 +12,18 @@ import Item
 -- CONSTANTES DEL MENÚ
 -------------------------------------------------------------
 
+-- Posición del botón (centro del mapa)
 buttonX, buttonY :: Float
 buttonX = 0.0
 buttonY = -50.0
 
+-- Tamaño del botón
 buttonW, buttonH :: Float
 buttonW = 300.0
 buttonH = 60.0
 
+-- Dimensiones de la imagen de fondo del menú
+-- Ajustado según tu captura de pantalla (1024x572)
 menuBgW, menuBgH :: Float
 menuBgW = 1024.0 
 menuBgH = 572.0 
@@ -37,17 +41,17 @@ render assets gs = case currentScreen gs of
 drawGameScreen :: Assets -> GameState -> Picture
 drawGameScreen assets gs =
     pictures [ scaledBackground
-             , drawItems gs    
+             , drawItems gs 
              , drawEnemies assets gs
              , drawBullets gs
              , drawEnemyBullets gs
              , scaledPlayer
-             , drawHUD gs -- Usa drawHUD o drawHealthBar, aquí unificamos a drawHealthBar/HUD
+             , drawHealthBar gs
              ]
   where
     (winW, winH) = windowSize gs
 
-    terrainW = 640.0 
+    terrainW = 480.0
     terrainH = 360.0
     
     scaleX = fromIntegral winW / terrainW
@@ -104,20 +108,18 @@ drawMenuScreen assets gs =
         in translate buttonX buttonY $ pictures [buttonFill, buttonOutline, buttonText]
 
 -------------------------------------------------------------
--- RENDER DE HUD / BARRA DE VIDA (CORREGIDO)
+-- RENDER DE BARRA DE VIDA
 -------------------------------------------------------------
 
--- Puedes renombrar esto a drawHealthBar si prefieres solo la barra, 
--- o mantener drawHUD si quieres mostrar más info. Aquí pongo la barra simple corregida.
-drawHUD :: GameState -> Picture 
-drawHUD gs = 
+drawHealthBar :: GameState -> Picture
+drawHealthBar gs = 
     translate barX barY $ 
     pictures [ bgBar, fillBar, borderBar ]
   where
     (winWInt, winHInt) = windowSize gs
     
     maxHP = 100.0
-    -- ¡CORRECCIÓN AQUÍ! Usamos currentHealth gs
+    -- CORRECCIÓN: Usamos currentHealth en lugar de playerHealth
     currentHP = fromIntegral (currentHealth gs)
     barW = 100.0
     barH = 10.0
@@ -142,8 +144,9 @@ drawBullets :: GameState -> Picture
 drawBullets gs = pictures (map drawBullet (bullets gs))
   where
     (winW, winH) = windowSize gs
-    terrainW = 640.0
+    terrainW = 480.0
     terrainH = 360.0
+    
     scaleX = fromIntegral winW / terrainW
     scaleY = fromIntegral winH / terrainH
 
@@ -156,7 +159,7 @@ drawEnemyBullets :: GameState -> Picture
 drawEnemyBullets gs = pictures (map drawEnemyBullet (enemyBullets gs))
   where
     (winW, winH) = windowSize gs
-    terrainW = 640.0
+    terrainW = 480.0
     terrainH = 360.0
     scaleX = fromIntegral winW / terrainW
     scaleY = fromIntegral winH / terrainH
@@ -164,17 +167,17 @@ drawEnemyBullets gs = pictures (map drawEnemyBullet (enemyBullets gs))
     drawEnemyBullet eBullet =
         let (x, y) = eBulletPos eBullet
         in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $
-             color red (circleSolid 3)
+             color red (circleSolid 3) 
 
 -------------------------------------------------------------
--- RENDER DE ENEMIGOS Y ITEMS
+-- RENDER DE ENEMIGOS
 -------------------------------------------------------------
 
 drawEnemies :: Assets -> GameState -> Picture
 drawEnemies assets gs = pictures (map drawEnemy (enemies gs))
   where
     (winW, winH) = windowSize gs
-    terrainW = 640.0
+    terrainW = 480.0
     terrainH = 360.0
     scaleX = fromIntegral winW / terrainW
     scaleY = fromIntegral winH / terrainH
@@ -184,14 +187,31 @@ drawEnemies assets gs = pictures (map drawEnemy (enemies gs))
             enemySprite = aCazaSprite assets 
         in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ enemySprite
 
+-------------------------------------------------------------
+-- RENDER DE ITEMS
+-------------------------------------------------------------
+
 drawItems :: GameState -> Picture
 drawItems gs = pictures (map drawItem (items gs))
   where
     (winW, winH) = windowSize gs
-    scaleX = fromIntegral winW / 640.0
-    scaleY = fromIntegral winH / 360.0
+    terrainW = 480.0
+    terrainH = 360.0
+    scaleX = fromIntegral winW / terrainW
+    scaleY = fromIntegral winH / terrainH
 
     drawItem item =
       let (x,y) = itemPos item
-          (col, shape) = (green, circleSolid 10.0)
+          radius = itemRadius item
+          (col, shape) = case itemType item of
+              HealSmall   -> (green, circleSolid radius)
+              SpeedBoost  -> (blue, rectangleSolid radius radius)
+              DamageBoost -> (violet, rotate 45 $ rectangleSolid radius radius)
       in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ color col shape
+
+-------------------------------------------------------------
+-- RENDER DEL HUD (Opcional)
+-------------------------------------------------------------
+
+drawHUD :: GameState -> Picture
+drawHUD gs = blank

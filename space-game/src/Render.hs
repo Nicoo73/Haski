@@ -1,5 +1,3 @@
--- Render.hs
--- Render the game state to the screen
 module Render
   ( render
   ) where
@@ -11,81 +9,132 @@ import Enemy
 import Item 
 
 -------------------------------------------------------------
+-- CONSTANTES DEL MENÚ
+-------------------------------------------------------------
+
+-- Posición del botón (centro del mapa)
+buttonX, buttonY :: Float
+buttonX = 0.0
+buttonY = -50.0
+
+-- Tamaño del botón
+buttonW, buttonH :: Float
+buttonW = 300.0
+buttonH = 60.0
+
+-- Dimensiones de la imagen de fondo del menú
+-- Ajustado según tu captura de pantalla (1024x572)
+menuBgW, menuBgH :: Float
+menuBgW = 1024.0 
+menuBgH = 572.0 
+
+-------------------------------------------------------------
 -- RENDER GENERAL
 -------------------------------------------------------------
 
 render :: Assets -> GameState -> Picture
-render assets gs =
+render assets gs = case currentScreen gs of
+    Menu    -> drawMenuScreen assets gs
+    Playing -> drawGameScreen assets gs
+    GameOver -> drawGameScreen assets gs
+
+drawGameScreen :: Assets -> GameState -> Picture
+drawGameScreen assets gs =
     pictures [ scaledBackground
-             , drawItems gs    
+             , drawItems gs 
              , drawEnemies assets gs
              , drawBullets gs
              , drawEnemyBullets gs
              , scaledPlayer
-             , drawHUD gs      -- FUNCIÓN CORREGIDA
+             , drawHealthBar gs
              ]
   where
-    -- Escala según el ancho de la ventana
     (winW, winH) = windowSize gs
 
-    terrainW = 640.0 
+    terrainW = 480.0
     terrainH = 360.0
-    -- Use minimum scale to ensure terrain fits in both dimensions
-    scaleW = fromIntegral winW / terrainW
-    scaleH = fromIntegral winH / terrainH
-    scaleF = min scaleW scaleH -- Factor de escala para todo el mapa
+    
+    scaleX = fromIntegral winW / terrainW
+    scaleY = fromIntegral winH / terrainH
 
     background = aBackground assets
-    scaledBackground = scale scaleF scaleF background
+    scaledBackground = scale scaleX scaleY background
 
-    -- Get rotation angle based on player direction (8 directions)
     rotAngle = case playerDir gs of
       DUp        -> 0
       DDown      -> 180
       DLeft      -> 270
       DRight     -> 90
-      DUpLeft    -> 315  
-      DUpRight   -> 45   
-      DDownLeft  -> 225  
-      DDownRight -> 135  
+      DUpLeft    -> 315 
+      DUpRight   -> 45  
+      DDownLeft  -> 225 
+      DDownRight -> 135 
 
     (px, py) = playerPos gs
 
-    -- frames del jugador
     frames = aPlayerFrames assets
     numFrames = max 1 (length frames)
-
     frameIndex = floor (animTime gs * 8.0) `mod` numFrames
     playerSprite = frames !! frameIndex
 
-    -- Transformación: Escala -> Rotación -> Traslación
-    scaledPlayer = translate (px * scaleF) (py * scaleF) $ scale scaleF scaleF $ rotate rotAngle playerSprite
+    scaledPlayer = translate (px * scaleX) (py * scaleY) $ scale scaleX scaleY $ rotate rotAngle playerSprite
 
     
 -------------------------------------------------------------
--- RENDER DE ITEMS
+-- RENDER DE MENÚ
 -------------------------------------------------------------
 
-drawItems :: GameState -> Picture
-drawItems gs = pictures (map drawItem (items gs))
+drawMenuScreen :: Assets -> GameState -> Picture
+drawMenuScreen assets gs =
+    pictures [ scaledMenuBackground
+             , drawMenuButton
+             ]
   where
-    (winW, winH) = windowSize gs
-    terrainW = 640.0
-    terrainH = 360.0
-    scaleW = fromIntegral winW / terrainW
-    scaleH = fromIntegral winH / terrainH
-    scaleF = min scaleW scaleH 
+    (winWInt, winHInt) = windowSize gs
+    winW = fromIntegral winWInt
+    winH = fromIntegral winHInt
+    
+    menuScaleW = winW / menuBgW
+    menuScaleH = winH / menuBgH
+    menuScaleF = max menuScaleW menuScaleH 
 
-    -- Usamos el radio que define el tamaño del ítem en el mundo (10.0)
-    drawItem item =
-      let (x,y) = itemPos item
-          radius = itemRadius item
-          (col, shape) = case itemType item of
-              HealSmall   -> (green, circleSolid radius)
-              SpeedBoost  -> (blue, rectangleSolid radius radius)
-              DamageBoost -> (violet, rotate 45 $ rectangleSolid radius radius)
-      -- APLICAMOS EL MISMO FACTOR DE ESCALA AL DIBUJAR
-      in translate (x * scaleF) (y * scaleF) $ scale scaleF scaleF $ color col shape
+    scaledMenuBackground = scale menuScaleF menuScaleF (aMenuBackground assets)
+
+    drawMenuButton =
+        let 
+            buttonOutline = color white (rectangleWire buttonW buttonH)
+            buttonFill = color (makeColorI 0 0 128 255) (rectangleSolid (buttonW - 2) (buttonH - 2))
+            buttonText = translate (-120) (-10) $ scale 0.2 0.2 $ color white $ text "Comenzar a jugar"
+        in translate buttonX buttonY $ pictures [buttonFill, buttonOutline, buttonText]
+
+-------------------------------------------------------------
+-- RENDER DE BARRA DE VIDA
+-------------------------------------------------------------
+
+drawHealthBar :: GameState -> Picture
+drawHealthBar gs = 
+    translate barX barY $ 
+    pictures [ bgBar, fillBar, borderBar ]
+  where
+    (winWInt, winHInt) = windowSize gs
+    
+    maxHP = 100.0
+    -- CORRECCIÓN: Usamos currentHealth en lugar de playerHealth
+    currentHP = fromIntegral (currentHealth gs)
+    barW = 100.0
+    barH = 10.0
+    
+    margin = 20.0
+    barX = -fromIntegral winWInt / 2 + margin + (barW / 2)
+    barY = fromIntegral winHInt / 2 - margin - (barH / 2)
+
+    fillPct = max 0 (currentHP / maxHP)
+    fillW = barW * fillPct
+
+    bgBar = color red $ rectangleSolid barW barH
+    fillBar = translate (-(barW - fillW)/2) 0 $
+              color green $ rectangleSolid fillW barH
+    borderBar = color white $ rectangleWire barW barH
 
 -------------------------------------------------------------
 -- RENDER DE PROYECTILES
@@ -95,34 +144,29 @@ drawBullets :: GameState -> Picture
 drawBullets gs = pictures (map drawBullet (bullets gs))
   where
     (winW, winH) = windowSize gs
-    terrainW = 640.0
+    terrainW = 480.0
     terrainH = 360.0
-    scaleW = fromIntegral winW / terrainW
-    scaleH = fromIntegral winH / terrainH
-    scaleF = min scaleW scaleH
+    
+    scaleX = fromIntegral winW / terrainW
+    scaleY = fromIntegral winH / terrainH
 
     drawBullet bullet =
         let (x, y) = bulletPos bullet
-        in translate (x * scaleF) (y * scaleF) $ scale scaleF scaleF $
-             color yellow (circleSolid 3) 
-
--------------------------------------------------------------
--- RENDER DE PROYECTILES ENEMIGOS
--------------------------------------------------------------
+        in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $
+             color yellow (circleSolid 3)
 
 drawEnemyBullets :: GameState -> Picture
 drawEnemyBullets gs = pictures (map drawEnemyBullet (enemyBullets gs))
   where
     (winW, winH) = windowSize gs
-    terrainW = 640.0
+    terrainW = 480.0
     terrainH = 360.0
-    scaleW = fromIntegral winW / terrainW
-    scaleH = fromIntegral winH / terrainH
-    scaleF = min scaleW scaleH
+    scaleX = fromIntegral winW / terrainW
+    scaleY = fromIntegral winH / terrainH
 
     drawEnemyBullet eBullet =
         let (x, y) = eBulletPos eBullet
-        in translate (x * scaleF) (y * scaleF) $ scale scaleF scaleF $
+        in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $
              color red (circleSolid 3) 
 
 -------------------------------------------------------------
@@ -133,58 +177,41 @@ drawEnemies :: Assets -> GameState -> Picture
 drawEnemies assets gs = pictures (map drawEnemy (enemies gs))
   where
     (winW, winH) = windowSize gs
-    terrainW = 640.0
+    terrainW = 480.0
     terrainH = 360.0
-    scaleW = fromIntegral winW / terrainW
-    scaleH = fromIntegral winH / terrainH
-    scaleF = min scaleW scaleH
+    scaleX = fromIntegral winW / terrainW
+    scaleY = fromIntegral winH / terrainH
 
     drawEnemy enemy =
         let (x, y) = enemyPos enemy
-            enemySprite = case enemyType enemy of
-              Caza -> aCazaSprite assets
-        in translate (x * scaleF) (y * scaleF) $ scale scaleF scaleF $ enemySprite
+            enemySprite = aCazaSprite assets 
+        in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ enemySprite
 
 -------------------------------------------------------------
--- HUD (REPOSICIONADO Y ESPACIADO)
+-- RENDER DE ITEMS
+-------------------------------------------------------------
+
+drawItems :: GameState -> Picture
+drawItems gs = pictures (map drawItem (items gs))
+  where
+    (winW, winH) = windowSize gs
+    terrainW = 480.0
+    terrainH = 360.0
+    scaleX = fromIntegral winW / terrainW
+    scaleY = fromIntegral winH / terrainH
+
+    drawItem item =
+      let (x,y) = itemPos item
+          radius = itemRadius item
+          (col, shape) = case itemType item of
+              HealSmall   -> (green, circleSolid radius)
+              SpeedBoost  -> (blue, rectangleSolid radius radius)
+              DamageBoost -> (violet, rotate 45 $ rectangleSolid radius radius)
+      in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ color col shape
+
+-------------------------------------------------------------
+-- RENDER DEL HUD (Opcional)
 -------------------------------------------------------------
 
 drawHUD :: GameState -> Picture
-drawHUD gs@GameState{ currentStats = cs, currentHealth = ch, waveCount = wc } =
-  let
-    -- Cálculo de datos (sin cambios)
-    totalDmg = playerDamage cs + playerDamageBonus cs
-    totalSpd = playerMoveSpeed cs + playerSpeedBonus cs
-    
-    -- Texto del HUD (sin cambios)
-    healthText = "HP: " ++ show ch
-    damageText = "Dmg: " ++ show totalDmg ++ " (+" ++ show (playerDamageBonus cs) ++ ")"
-    speedText  = "Spd: " ++ show (round totalSpd) ++ " (+" ++ show (round (playerSpeedBonus cs)) ++ ")"
-    waveText   = "Wave: " ++ show wc
-    
-    -- Ajuste de diseño:
-    hudScale = 0.15 
-    lineHeight = 50.0 -- Separación vertical AUMENTADA para evitar solapamiento
-    
-    -- El texto de Gloss se centra. Para alinearlo a la izquierda,
-    -- movemos el punto de anclaje (0,0) hacia la derecha una cantidad 'offset'
-    -- (el offset es aproximado al ancho de una línea).
-    textHorizontalOffset = 180.0 / hudScale -- Estimación del ancho del texto (180.0)
-
-    -- La posición base es la esquina superior izquierda del área de juego
-    -- (-terrainW/2 + margin, terrainH/2 - margin).
-    -- Usamos -300 para X y 160 para Y. 
-    -- Luego, movemos las líneas individualmente para que la traducción base funcione.
-
-    hudPos = (-300, 160) 
-    
-    -- Organizar el texto: 
-    -- Trasladamos la línea hacia la derecha (Offset) para que el centroide del texto 
-    -- se mueva a la derecha y el texto se perciba alineado a la izquierda.
-    line1 = translate (textHorizontalOffset / 2) 0 $ text healthText
-    line2 = translate (textHorizontalOffset / 2) (-lineHeight) $ text damageText
-    line3 = translate (textHorizontalOffset / 2) (-lineHeight * 2) $ text speedText
-    line4 = translate (textHorizontalOffset / 2) (-lineHeight * 3) $ text waveText
-    
-  in translate (fst hudPos) (snd hudPos) $ scale hudScale hudScale $ color white $ 
-     pictures [ line1, line2, line3, line4 ]
+drawHUD gs = blank

@@ -13,8 +13,8 @@ import Update (updateWorld)
 
 -- Window configuration
 windowWidth, windowHeight :: Int
-windowWidth = 640
-windowHeight = 360
+windowWidth = 1600
+windowHeight = 900
 
 window :: Display
 window = InWindow "Space Game - Haskell"

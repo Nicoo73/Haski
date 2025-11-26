@@ -12,8 +12,13 @@ import Control.Exception (try, SomeException)
 data Assets = Assets
   { aPlayerFrames   :: [Picture]
   , aBackground     :: Picture
-  , aCazaSprite     :: Picture
+  , aAlien1Sprite   :: Picture
+  , aAlien2Sprite   :: Picture
+  , aAlien3Sprite   :: Picture
   , aMenuBackground :: Picture
+  , aHealSmallSprite :: Picture
+  , aSpeedBoostSprite :: Picture
+  , aDamageBoostSprite :: Picture
   }
 
 -- Wrapper seguro para cargar PNG
@@ -91,8 +96,43 @@ loadAssets = do
   -- 3. CARGAR FONDO MENU
   mMenuBackground <- tryLoadJPG (assetsPath ++ "background/menu.jpg") "bg_menu_temp"
 
-  -- 4. CARGAR ENEMIGO CAZA
-  mCazaSprite <- tryLoadPNG (assetsPath ++ "enemies/caza.png")
+  -- 4. CARGAR ENEMIGO ALIEN1
+  putStrLn $ "Cargando alien1 desde: " ++ assetsPath ++ "enemies/alien1.png"
+  mAlien1Sprite <- tryLoadPNG (assetsPath ++ "enemies/alien1.png")
+  case mAlien1Sprite of
+    Just _ -> putStrLn "✓ Alien1 cargado exitosamente"
+    Nothing -> putStrLn "✗ ERROR: No se pudo cargar alien1.png"
+
+  -- 4b. CARGAR ENEMIGO ALIEN2
+  putStrLn $ "Cargando alien2 desde: " ++ assetsPath ++ "enemies/alien2.png"
+  mAlien2Sprite <- tryLoadPNG (assetsPath ++ "enemies/alien2.png")
+  case mAlien2Sprite of
+    Just _ -> putStrLn "✓ Alien2 cargado exitosamente"
+    Nothing -> putStrLn "✗ ERROR: No se pudo cargar alien2.png"
+
+  -- 4c. CARGAR ENEMIGO ALIEN3 (KAMIKAZE)
+  putStrLn $ "Cargando alien3 desde: " ++ assetsPath ++ "enemies/alien3.png"
+  mAlien3Sprite <- tryLoadPNG (assetsPath ++ "enemies/alien3.png")
+  case mAlien3Sprite of
+    Just _ -> putStrLn "✓ Alien3 cargado exitosamente"
+    Nothing -> putStrLn "✗ ERROR: No se pudo cargar alien3.png"
+
+  -- 5. CARGAR ITEMS
+  putStrLn $ "Cargando items desde: " ++ assetsPath ++ "items/"
+  mHealSmallSprite <- tryLoadPNG (assetsPath ++ "items/life.png")
+  case mHealSmallSprite of
+    Just _ -> putStrLn "✓ Life item cargado exitosamente"
+    Nothing -> putStrLn "✗ ERROR: No se pudo cargar life.png"
+    
+  mSpeedBoostSprite <- tryLoadPNG (assetsPath ++ "items/spd.png")
+  case mSpeedBoostSprite of
+    Just _ -> putStrLn "✓ Speed item cargado exitosamente"
+    Nothing -> putStrLn "✗ ERROR: No se pudo cargar spd.png"
+    
+  mDamageBoostSprite <- tryLoadPNG (assetsPath ++ "items/dmg.png")
+  case mDamageBoostSprite of
+    Just _ -> putStrLn "✓ Damage item cargado exitosamente"
+    Nothing -> putStrLn "✗ ERROR: No se pudo cargar dmg.png"
 
   -- Fallbacks (Cuadrados de color si falla la carga)
   let playerFramesFinal = if null playerFrames 
@@ -107,13 +147,38 @@ loadAssets = do
         Just pic -> pic
         Nothing  -> color (makeColorI 50 0 100 255) $ rectangleSolid 480 360
 
-      cazaSpriteFinal = case mCazaSprite of
+      alien1SpriteFinal = case mAlien1Sprite of
         Just pic -> pic
         Nothing  -> color (makeColorI 255 50 50 255) $ rectangleSolid 24 24
+
+      alien2SpriteFinal = case mAlien2Sprite of
+        Just pic -> pic
+        Nothing  -> color (makeColorI 50 255 50 255) $ rectangleSolid 24 24
+
+      alien3SpriteFinal = case mAlien3Sprite of
+        Just pic -> pic
+        Nothing  -> color (makeColorI 255 100 0 255) $ rectangleSolid 24 24
+
+      healSmallSpriteFinal = case mHealSmallSprite of
+        Just pic -> pic
+        Nothing  -> color (makeColorI 0 255 0 255) $ rectangleSolid 16 16
+
+      speedBoostSpriteFinal = case mSpeedBoostSprite of
+        Just pic -> pic
+        Nothing  -> color (makeColorI 0 0 255 255) $ rectangleSolid 16 16
+
+      damageBoostSpriteFinal = case mDamageBoostSprite of
+        Just pic -> pic
+        Nothing  -> color (makeColorI 255 0 255 255) $ rectangleSolid 16 16
 
   return Assets
     { aPlayerFrames   = playerFramesFinal
     , aBackground     = backgroundFinal
-    , aCazaSprite     = cazaSpriteFinal
+    , aAlien1Sprite   = alien1SpriteFinal
+    , aAlien2Sprite   = alien2SpriteFinal
+    , aAlien3Sprite   = alien3SpriteFinal
     , aMenuBackground = menuBackgroundFinal
+    , aHealSmallSprite = healSmallSpriteFinal
+    , aSpeedBoostSprite = speedBoostSpriteFinal
+    , aDamageBoostSprite = damageBoostSpriteFinal
     }

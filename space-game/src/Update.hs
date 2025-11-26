@@ -35,20 +35,25 @@ updateWorld dt gs =
     movedBullets = updateBullets dt gsPlayerMoved
     movedEnemyBullets = updateEnemyBullets dt allEnemyBullets
     
+    -- 5b. COLISIÓN KAMIKAZE: Alien3 explota al estar cerca del jugador
+    (kamikazeEnemies, kamikazeDamage, kamikazeItems) = checkKamikazeCollisions (playerPos gsPlayerMoved) updatedEnemies
+    
     -- 6. Colisiones: Bala Jugador vs Enemigo (Dropea Items)
-    (finalBullets, finalEnemies, droppedItems) = checkCollisions movedBullets updatedEnemies
+    (finalBullets, finalEnemies, droppedItems) = checkCollisions movedBullets kamikazeEnemies
     
     -- 7. Colisiones: Bala Enemigo vs Jugador (Calculamos daño)
     (finalEnemyBullets, damageToPlayer) = checkPlayerCollisions movedEnemyBullets (playerPos gsPlayerMoved)
     
-    -- Vida temporal después del daño (pero antes de curar)
-    healthAfterDamage = max 0 (currentHealth gsPlayerMoved - damageToPlayer)
+    -- Vida temporal después del daño (incluyendo kamikaze)
+    totalDamage = damageToPlayer + kamikazeDamage
+    healthAfterDamage = max 0 (currentHealth gsPlayerMoved - totalDamage)
 
     -- 8. Recolección de Items (Curación y Buffs)
     -- Creamos un estado base que YA TIENE el daño aplicado
     gsWithDamage = gsPlayerMoved { currentHealth = healthAfterDamage }
     
-    currentItems = items gsPlayerMoved ++ droppedItems
+    -- Incluir items de balas y de kamikazes
+    currentItems = items gsPlayerMoved ++ droppedItems ++ kamikazeItems
     
     -- checkItemCollection toma 'gsWithDamage' y le suma la curación si recoge ítems
     -- El resultado 'gsItemsApplied' tiene la vida final correcta (Vida - Daño + Curación)
@@ -128,10 +133,29 @@ checkCollisions :: [Bullet] -> [Enemy] -> ([Bullet], [Enemy], [Item])
 checkCollisions bullets enemies =
   let collisionDistSq = (3.0 + 12.0) ^ 2 
       isColliding b e = let (bx,by) = bulletPos b; (ex,ey) = enemyPos e in (bx-ex)^2 + (by-ey)^2 < collisionDistSq
+      
+      -- Procesar cada bala y actualizar enemigos
       (survivingBullets, survivingEnemies, droppedItems) = foldr (\b (bs, es, accI) ->
           let (hits, misses) = Data.List.partition (isColliding b) es
-              newItems = [ item | enemy <- hits, Just item <- [spawnItemPure (enemyPos enemy)] ]
-          in if null hits then (b:bs, es, accI) else (bs, misses, accI ++ newItems)
+          in if null hits 
+             then (b:bs, es, accI)  -- Bala no golpeó nada
+             else 
+               -- Bala golpeó enemigo(s), restar vida
+               let damage = bulletDamage b
+                   -- Aplicar daño al primer enemigo golpeado
+                   damagedEnemy = head hits
+                   newHealth = enemyHealth damagedEnemy - damage
+                   
+                   -- Si el enemigo muere, generar item y eliminarlo
+                   (finalEnemies, newItems) = 
+                     if newHealth <= 0
+                     then (tail hits ++ misses, 
+                           case spawnItemPure (enemyPos damagedEnemy) of
+                             Just item -> [item]
+                             Nothing -> [])
+                     else (damagedEnemy { enemyHealth = newHealth } : tail hits ++ misses, [])
+                   
+               in (bs, finalEnemies, accI ++ newItems)  -- Bala se consume
         ) ([], enemies, []) bullets
   in (survivingBullets, survivingEnemies, droppedItems)
 
@@ -141,6 +165,28 @@ checkPlayerCollisions ebs (px, py) =
       isHit eb = let (bx,by) = eBulletPos eb in (bx-px)^2 + (by-py)^2 < colDistSq
       (hits, misses) = Data.List.partition isHit ebs
   in (misses, sum (map eBulletDamage hits))
+
+-- COLISIÓN KAMIKAZE: Alien3 explota al estar cerca del jugador
+checkKamikazeCollisions :: (Float, Float) -> [Enemy] -> ([Enemy], Int, [Item])
+checkKamikazeCollisions (px, py) enemies =
+  let kamikazeDistSq = 16.0 ^ 2  -- Explota a 16px de distancia
+      isKamikaze e = enemyType e == Alien3
+      distToPlayerSq e = let (ex, ey) = enemyPos e in (px - ex)^2 + (py - ey)^2
+      
+      -- Separar kamikazes que están cerca del jugador
+      (kamikazes, others) = partition isKamikaze enemies
+      (exploding, surviving) = partition (\e -> distToPlayerSq e < kamikazeDistSq) kamikazes
+      
+      -- Calcular daño total de las explosiones
+      totalDamage = sum (map enemyDamage exploding)
+      
+      -- Generar items de los Alien3 que explotaron
+      droppedItems = [ item | enemy <- exploding, Just item <- [spawnItemPure (enemyPos enemy)] ]
+      
+      -- Enemigos que sobreviven (los que no explotaron)
+      survivingEnemies = surviving ++ others
+      
+  in (survivingEnemies, totalDamage, droppedItems)
 
 checkItemCollection :: (Float, Float) -> [Item] -> GameState -> ([Item], GameState)
 checkItemCollection (px, py) items gs =
@@ -157,4 +203,4 @@ applyItemEffect item gs@GameState{ currentStats = cs } =
     -- Cura 20 de vida, respetando el máximo definido en playerHealth de los stats
     HealSmall   -> gs { currentHealth = min (playerHealth cs) (currentHealth gs + 20) }
     SpeedBoost  -> gs { currentStats = cs { playerSpeedBonus = playerSpeedBonus cs + 25.0 } } 
-    DamageBoost -> gs { currentStats = cs { playerDamageBonus = playerDamageBonus cs + 1 } }
+    DamageBoost -> gs { currentStats = cs { playerDamageBonus = playerDamageBonus cs + 5 } }

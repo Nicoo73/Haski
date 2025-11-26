@@ -42,12 +42,12 @@ getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: 
 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
-bindir     = "/home/iancuea/.cabal/bin"
-libdir     = "/home/iancuea/.cabal/lib/x86_64-linux-ghc-9.4.7/space-game-1.0-inplace-game"
-dynlibdir  = "/home/iancuea/.cabal/lib/x86_64-linux-ghc-9.4.7"
-datadir    = "/home/iancuea/.cabal/share/x86_64-linux-ghc-9.4.7/space-game-1.0"
-libexecdir = "/home/iancuea/.cabal/libexec/x86_64-linux-ghc-9.4.7/space-game-1.0"
-sysconfdir = "/home/iancuea/.cabal/etc"
+bindir     = "/home/star/.cabal/bin"
+libdir     = "/home/star/.cabal/lib/x86_64-linux-ghc-9.4.7/space-game-1.0-inplace-game"
+dynlibdir  = "/home/star/.cabal/lib/x86_64-linux-ghc-9.4.7"
+datadir    = "/home/star/.cabal/share/x86_64-linux-ghc-9.4.7/space-game-1.0"
+libexecdir = "/home/star/.cabal/libexec/x86_64-linux-ghc-9.4.7/space-game-1.0"
+sysconfdir = "/home/star/.cabal/etc"
 
 getBinDir     = catchIO (getEnv "space_game_bindir")     (\_ -> return bindir)
 getLibDir     = catchIO (getEnv "space_game_libdir")     (\_ -> return libdir)

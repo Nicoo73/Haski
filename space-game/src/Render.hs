@@ -41,7 +41,7 @@ render assets gs = case currentScreen gs of
 drawGameScreen :: Assets -> GameState -> Picture
 drawGameScreen assets gs =
     pictures [ scaledBackground
-             , drawItems gs 
+             , drawItems assets gs 
              , drawEnemies assets gs
              , drawBullets gs
              , drawEnemyBullets gs
@@ -184,15 +184,18 @@ drawEnemies assets gs = pictures (map drawEnemy (enemies gs))
 
     drawEnemy enemy =
         let (x, y) = enemyPos enemy
-            enemySprite = aCazaSprite assets 
+            enemySprite = case enemyType enemy of
+              Alien1 -> aAlien1Sprite assets
+              Alien2 -> aAlien2Sprite assets
+              Alien3 -> aAlien3Sprite assets
         in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ enemySprite
 
 -------------------------------------------------------------
 -- RENDER DE ITEMS
 -------------------------------------------------------------
 
-drawItems :: GameState -> Picture
-drawItems gs = pictures (map drawItem (items gs))
+drawItems :: Assets -> GameState -> Picture
+drawItems assets gs = pictures (map drawItem (items gs))
   where
     (winW, winH) = windowSize gs
     terrainW = 480.0
@@ -202,12 +205,11 @@ drawItems gs = pictures (map drawItem (items gs))
 
     drawItem item =
       let (x,y) = itemPos item
-          radius = itemRadius item
-          (col, shape) = case itemType item of
-              HealSmall   -> (green, circleSolid radius)
-              SpeedBoost  -> (blue, rectangleSolid radius radius)
-              DamageBoost -> (violet, rotate 45 $ rectangleSolid radius radius)
-      in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ color col shape
+          itemSprite = case itemType item of
+              HealSmall   -> aHealSmallSprite assets
+              SpeedBoost  -> aSpeedBoostSprite assets
+              DamageBoost -> aDamageBoostSprite assets
+      in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ itemSprite
 
 -------------------------------------------------------------
 -- RENDER DEL HUD (Opcional)

@@ -6,12 +6,13 @@ import GameState
 import Enemy
 import Wave
 import Input (updateGameState, dirToVector)
+import Item -- IMPORTADO: Para usar el módulo Item
 import Data.List (partition)
 import System.Random (randomRIO)
 import System.IO.Unsafe (unsafePerformIO)  -- Para IO en contexto puro
 
 -------------------------------------------------------------
--- LÓGICA DE ACTUALIZACIÓN DEL MUNDO
+-- LÓGICA DE ACTUALIZACIÓN DEL MUNDO (MODIFICADO)
 -------------------------------------------------------------
 
 updateWorld :: Float -> GameState -> GameState
@@ -36,28 +37,32 @@ updateWorld dt gs =
     movedEnemyBullets = updateEnemyBullets dt allEnemyBullets
     
     -- 5. COLISIONES: Revisa colisiones entre proyectiles y enemigos.
-    (finalBullets, finalEnemies) = checkCollisions movedBullets updatedEnemies
+    -- NUEVO: checkCollisions ahora devuelve los ítems dropeados.
+    (finalBullets, finalEnemies, droppedItems) = checkCollisions movedBullets updatedEnemies
     
     -- 5.5. COLISIONES CON JUGADOR: Revisa colisiones entre proyectiles enemigos y jugador
     (finalEnemyBullets, damageToPlayer) = checkPlayerCollisions movedEnemyBullets (playerPos gsPlayerMoved)
     newPlayerHealth = max 0 (currentHealth gsPlayerMoved - damageToPlayer)
 
+    -- 5.6. RECOLECCIÓN DE ITEMS (Jugador vs Items) -- NUEVO
+    currentItems = items gsPlayerMoved ++ droppedItems
+    (remainingItems, gsItemsApplied) = checkItemCollection (playerPos gsPlayerMoved) currentItems gsPlayerMoved
+
     -- 6. LÓGICA DE AVANCE DE OLEADA: Verifica si la oleada terminó.
-    -- El estado actual de la oleada es 'newWave' (el resultado de spawnWaveIfNeeded)
-    isWaveFinished = null finalEnemies && enemiesLeft newWave == 0 -- ¡CORRECCIÓN AQUÍ!
+    isWaveFinished = null finalEnemies && enemiesLeft newWave == 0
     
     -- 7. CALCULAR LA PRÓXIMA OLEADA
     (newWaveState, newWaveCount) = if isWaveFinished
-                                       -- Si terminó, crea la siguiente oleada (waveCount + 1)
                                        then (nextWave (waveCount gsPlayerMoved + 1), waveCount gsPlayerMoved + 1)
-                                       -- Si no terminó, mantiene el estado de la oleada (newWave) y el contador
-                                       else (newWave, waveCount gsPlayerMoved) -- ¡CORRECCIÓN AQUÍ!
+                                       else (newWave, waveCount gsPlayerMoved)
     
     -- 8. DEVOLVER EL ESTADO FINAL
-  in gsPlayerMoved { 
+    -- Usar gsItemsApplied que ya tiene los nuevos currentStats
+  in gsItemsApplied { 
        enemies = finalEnemies,
        bullets = finalBullets,
        enemyBullets = finalEnemyBullets,
+       items   = remainingItems, -- Ítems restantes en el mapa
        wave    = newWaveState,
        waveCount = newWaveCount,
        currentHealth = newPlayerHealth
@@ -66,6 +71,7 @@ updateWorld dt gs =
 -------------------------------------------------------------
 -- LÓGICA DE MOVIMIENTO DE PROYECTILES (Mismas funciones que antes)
 -------------------------------------------------------------
+-- ... (updateBullets y updateEnemyBullets permanecen iguales) ...
 
 updateBullets :: Float -> GameState -> [Bullet]
 updateBullets dt gs@GameState{ bullets = bs, windowSize = (winW, winH) } =
@@ -89,6 +95,7 @@ updateBullets dt gs@GameState{ bullets = bs, windowSize = (winW, winH) } =
 -------------------------------------------------------------
 -- LÓGICA DE DISPARO DE ENEMIGOS
 -------------------------------------------------------------
+-- ... (processEnemyShooting y processEnemyShot permanecen iguales) ...
 
 -- Procesa los disparos de enemigos
 processEnemyShooting :: Float -> (Float, Float) -> [Enemy] -> ([Enemy], [EnemyBullet])
@@ -146,13 +153,14 @@ updateEnemyBullets dt bullets =
         in x < -mapX || x > mapX || y < -mapY || y > mapY
       
       movedBullets = map moveEnemyBullet bullets
-  in filter (not . isOffScreen) movedBullets
+  in filter (not . isOffScreen) bullets
+
 
 -------------------------------------------------------------
--- LÓGICA DE COLISIONES
+-- LÓGICA DE COLISIONES (MODIFICADA: Devuelve Items)
 -------------------------------------------------------------
 
-checkCollisions :: [Bullet] -> [Enemy] -> ([Bullet], [Enemy])
+checkCollisions :: [Bullet] -> [Enemy] -> ([Bullet], [Enemy], [Item])
 checkCollisions bullets enemies =
   let
     collisionDistSq = (3.0 + 12.0) ^ 2 
@@ -163,18 +171,22 @@ checkCollisions bullets enemies =
           distSq = (bx - ex)^2 + (by - ey)^2
       in distSq < collisionDistSq
 
-    (survivingBullets, survivingEnemies) = foldr (\bullet (bs, es) ->
+    -- Ahora, si una bala golpea, se desecha y el enemigo también (1 hit kill)
+    (survivingBullets, survivingEnemies, droppedItems) = foldr (\bullet (bs, es, accItems) ->
         let (hits, misses) = Data.List.partition (isColliding bullet) es
+            -- Por cada enemigo 'hit' se intenta generar un ítem
+            newItems = [ item | enemy <- hits, Just item <- [spawnItemPure (enemyPos enemy)] ]
         in if null hits
-           then (bullet : bs, es)
-           else (bs, misses)
-      ) ([], enemies) bullets
+           then (bullet : bs, es, accItems)
+           else (bs, misses, accItems ++ newItems) -- La bala desaparece, el enemigo desaparece
+      ) ([], enemies, []) bullets
       
-  in (survivingBullets, survivingEnemies)
+  in (survivingBullets, survivingEnemies, droppedItems)
 
 -------------------------------------------------------------
 -- LÓGICA DE COLISIONES CON EL JUGADOR
 -------------------------------------------------------------
+-- ... (checkPlayerCollisions permanece igual) ...
 
 -- Verifica colisiones entre balas enemigas y el jugador
 -- Retorna las balas que no colisionaron y el daño total recibido
@@ -199,3 +211,37 @@ checkPlayerCollisions enemyBullets playerPos =
     totalDamage = sum (map eBulletDamage hits)
     
   in (misses, totalDamage)
+
+-------------------------------------------------------------
+-- RECOLECCIÓN DE ITEMS: JUGADOR vs ITEMS (NUEVO)
+-------------------------------------------------------------
+
+checkItemCollection :: (Float, Float) -> [Item] -> GameState -> ([Item], GameState)
+checkItemCollection (px, py) currentItems gs =
+  let
+    -- Usamos el RANGO DE RECOLECCIÓN, que es más grande que el radio físico.
+    pickupRadius = playerPickupRange 
+    
+    isTouching item =
+       let (ix, iy) = itemPos item
+           r = itemRadius item
+           dx = px - ix
+           dy = py - iy
+           distSq = dx*dx + dy*dy                 -- Distancia al cuadrado
+           minDist = pickupRadius + r             -- Se usa pickupRadius aquí
+       in distSq < minDist * minDist               
+    
+    (collected, remaining) = partition isTouching currentItems
+    
+    -- Aplicar efectos de todos los items recogidos
+    gsAfterEffects = foldr applyItemEffect gs collected
+    
+  in (remaining, gsAfterEffects)
+
+-- Aplica el efecto de un solo item al GameState
+applyItemEffect :: Item -> GameState -> GameState
+applyItemEffect item gs@GameState{ currentStats = cs } = 
+  case itemType item of
+    HealSmall   -> gs { currentHealth = min (playerHealth cs) (currentHealth gs + 2) } -- Curar 2 HP
+    SpeedBoost  -> gs { currentStats = cs { playerSpeedBonus = playerSpeedBonus cs + 25.0 } } -- +25 velocidad
+    DamageBoost -> gs { currentStats = cs { playerDamageBonus = playerDamageBonus cs + 1 } } -- +1 daño

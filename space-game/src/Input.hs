@@ -39,14 +39,16 @@ handleEvent (EventResize newSize) gs =
 handleEvent _ gs = gs
 
 
--- NUEVA FUNCIÓN: DISPAROS
+-- NUEVA FUNCIÓN: DISPAROS (ACTUALIZADA)
 shootBullet :: GameState -> GameState
-shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs } =
+shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs, currentStats = cs } =
   let 
+    totalDamage = playerDamage cs + playerDamageBonus cs -- Daño base + Bonus
     newBullet = Bullet { 
-        bulletPos = pPos, 
-        bulletDir = pDir, 
-        bulletSpeed = playerBulletSpeed playerStats
+        bulletPos   = pPos, 
+        bulletDir   = pDir, 
+        bulletSpeed = playerBulletSpeed cs, -- Usar velocidad de bala actual
+        bulletDamage = totalDamage          -- La bala lleva el daño total
     }
   in gs { bullets = newBullet : bs }
 
@@ -64,11 +66,11 @@ updateGameState dt =
    
 
 -------------------------------------------------------------
--- SISTEMA DE MOVIMIENTO DEL JUGADOR
+-- SISTEMA DE MOVIMIENTO DEL JUGADOR (ACTUALIZADO)
 -------------------------------------------------------------
 
 updatePlayer :: Float -> GameState -> GameState
-updatePlayer dt gs = gs
+updatePlayer dt gs@GameState{ currentStats = cs } = gs
   { playerPos = newPos
   , playerDir = newDir
   , animTime = animTime gs + dt
@@ -85,8 +87,11 @@ updatePlayer dt gs = gs
     magnitude = sqrt (dx*dx + dy*dy)
     (ndx, ndy) = if magnitude > 0 then (dx/magnitude, dy/magnitude) else (0,0)
 
-    moveX = ndx * playerMoveSpeed playerStats * dt
-    moveY = ndy * playerMoveSpeed playerStats * dt
+    -- Velocidad total: base + bonus de ítems
+    totalMoveSpeed = playerMoveSpeed cs + playerSpeedBonus cs
+    
+    moveX = ndx * totalMoveSpeed * dt
+    moveY = ndy * totalMoveSpeed * dt
 
     (px, py) = playerPos gs
 
@@ -108,6 +113,8 @@ updatePlayer dt gs = gs
 -------------------------------------------------------------
 -- SISTEMA DE PROYECTILES
 -------------------------------------------------------------
+
+-- ... (Resto de updateBullets y updateEnemyBullets sin cambios significativos en Input.hs) ...
 
 updateBullets :: Float -> GameState -> GameState
 updateBullets dt gs@GameState{ bullets = bs } =
@@ -160,23 +167,6 @@ updateEnemyBullets dt gs@GameState{ enemyBullets = ebs } =
           terrainH = 360.0
           margin = 50.0
       in abs bx < (terrainW / 2 + margin) && abs by < (terrainH / 2 + margin)
-
--------------------------------------------------------------
--- SISTEMA DE ENEMIGOS (con Enemy.hs moderno)
--------------------------------------------------------------
-
---updateEnemies :: Float -> GameState -> GameState
---updateEnemies dt gs@GameState{ enemies = es, playerPos = p } =
---  gs { enemies = map (updateEnemy dt p) es }
-
--------------------------------------------------------------
--- SISTEMA DE OLEADAS (con Wave.hs moderno)
--------------------------------------------------------------
-
---updateWave :: Float -> GameState -> GameState
---updateWave dt gs@GameState{ wave = w, enemies = es } =
- -- let (spawned, newWave) = spawnWaveIfNeeded dt w
- -- in gs { enemies = es ++ spawned, wave = newWave }
 
 -------------------------------------------------------------
 -- UTILIDADES

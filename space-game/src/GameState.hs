@@ -10,6 +10,7 @@ module GameState
   , playerSize
   , playerStats
   , playerRange
+  , playerPickupRange
   , terrainWidth
   , terrainHeight
   , addKey
@@ -18,6 +19,8 @@ module GameState
 
 import Enemy (Direction(..))
 import qualified Enemy as E
+import Item (Item) -- IMPORTADO: Necesario para usar Item en GameState
+
 -- No importar Wave aquí para evitar dependencia circular
 -- Wave importará GameState solo para PlayerStats
 
@@ -36,6 +39,8 @@ data PlayerStats = PlayerStats
   , playerDamage       :: Int
   , playerMoveSpeed    :: Float  -- Base movement speed
   , playerBulletSpeed  :: Float  -- Base bullet speed
+  , playerDamageBonus  :: Int    -- NUEVO: Bonus de daño acumulado por ítems
+  , playerSpeedBonus   :: Float  -- NUEVO: Bonus de velocidad acumulado por ítems
   } deriving (Show)
 
 -------------------------------------------------------------
@@ -46,6 +51,7 @@ data Bullet = Bullet
   { bulletPos :: (Float, Float)
   , bulletDir :: Direction
   , bulletSpeed :: Float
+  , bulletDamage :: Int -- REQUERIDO para que el daño del jugador sea dinámico
   } deriving (Show)
 
 -------------------------------------------------------------
@@ -84,9 +90,11 @@ data GameState = GameState
   , enemies        :: [E.Enemy]
   , bullets        :: [Bullet]
   , enemyBullets   :: [EnemyBullet]
+  , items          :: [Item]       -- NUEVO: Lista de ítems en el mundo
   , wave           :: Wave
   , waveCount      :: Int
-  , currentHealth  :: Int  -- Vida actual del jugador
+  , currentHealth  :: Int          -- Vida actual del jugador
+  , currentStats   :: PlayerStats  -- NUEVO: Estadísticas actuales (base + bonus de items)
   } deriving (Show)
 
 -------------------------------------------------------------
@@ -95,6 +103,9 @@ data GameState = GameState
 
 playerSize :: Float
 playerSize = 16.0
+
+playerPickupRange :: Float
+playerPickupRange = 25.0 -- NUEVO: Radio de detección de ítems (más grande que playerSize/2)
 
 -- Dimensiones del terreno
 terrainWidth :: Float
@@ -110,6 +121,8 @@ playerStats = PlayerStats
   , playerDamage      = 2
   , playerMoveSpeed   = 200.0  -- Pixels per second
   , playerBulletSpeed = 400.0  -- Pixels per second
+  , playerDamageBonus = 0      -- Bonus inicial de daño
+  , playerSpeedBonus  = 0.0    -- Bonus inicial de velocidad
   }
 
 -- Rango efectivo del jugador (70% del terreno disponible)
@@ -130,9 +143,11 @@ initialState = GameState
   , enemies       = []
   , bullets       = []
   , enemyBullets  = []
+  , items         = []         -- NUEVO: Inicializar lista de ítems vacía
   , wave          = initialWave
   , waveCount     = 1
   , currentHealth = playerHealth playerStats
+  , currentStats  = playerStats  -- NUEVO: Inicializar las estadísticas actuales
   }
 
 -------------------------------------------------------------

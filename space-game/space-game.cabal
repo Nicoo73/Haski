@@ -12,4 +12,5 @@ executable game
     gloss,
     gloss-juicy,
     JuicyPixels,
-    random
+    random,
+    filepath

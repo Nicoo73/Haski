@@ -48,36 +48,27 @@ updateWorld dt gs =
     totalDamage = damageToPlayer + kamikazeDamage
     healthAfterDamage = max 0 (currentHealth gsPlayerMoved - totalDamage)
 
-    -- 8. Recolección de Items (Curación y Buffs)
-    -- Creamos un estado base que YA TIENE el daño aplicado
-    gsWithDamage = gsPlayerMoved { currentHealth = healthAfterDamage }
-    
-    -- Incluir items de balas y de kamikazes
-    currentItems = items gsPlayerMoved ++ droppedItems ++ kamikazeItems
-    
-    -- checkItemCollection toma 'gsWithDamage' y le suma la curación si recoge ítems
-    -- El resultado 'gsItemsApplied' tiene la vida final correcta (Vida - Daño + Curación)
-    (remainingItems, gsItemsApplied) = checkItemCollection (playerPos gsPlayerMoved) currentItems gsWithDamage
-
-    -- 9. Avanzar Oleada
-    isWaveFinished = null finalEnemies && enemiesLeft newWave == 0
-    
-    (newWaveState, newWaveCount) = if isWaveFinished
-                                       then (nextWave (waveCount gsPlayerMoved + 1), waveCount gsPlayerMoved + 1)
-                                       else (newWave, waveCount gsPlayerMoved)
-    
-  -- 10. DEVOLVER EL ESTADO FINAL
-  -- Usamos gsItemsApplied porque contiene la vida actualizada correctamente.
-  -- SOLO actualizamos los campos que cambiaron independientemente (enemigos, balas, oleada).
-  in gsItemsApplied { 
-       enemies = finalEnemies,
-       bullets = finalBullets,
-       enemyBullets = finalEnemyBullets,
-       items   = remainingItems,
-       wave    = newWaveState,
-       waveCount = newWaveCount
-       -- ¡IMPORTANTE! NO agregues 'currentHealth = ...' aquí, o borrarás la curación.
-     }
+    in if healthAfterDamage <= 0
+     then gs { currentScreen = GameOver, currentHealth = 0 }
+     else
+        let
+            -- ... (Lógica existente de items y oleadas: pasos 8 y 9) ...
+            gsWithDamage = gsPlayerMoved { currentHealth = healthAfterDamage }
+            currentItems = items gsPlayerMoved ++ droppedItems ++ kamikazeItems
+            (remainingItems, gsItemsApplied) = checkItemCollection (playerPos gsPlayerMoved) currentItems gsWithDamage
+            
+            isWaveFinished = null finalEnemies && enemiesLeft newWave == 0
+            (newWaveState, newWaveCount) = if isWaveFinished
+                                            then (nextWave (waveCount gsPlayerMoved + 1), waveCount gsPlayerMoved + 1)
+                                            else (newWave, waveCount gsPlayerMoved)
+        in gsItemsApplied { 
+             enemies = finalEnemies,
+             bullets = finalBullets,
+             enemyBullets = finalEnemyBullets,
+             items   = remainingItems,
+             wave    = newWaveState,
+             waveCount = newWaveCount
+           }
 
 -------------------------------------------------------------
 -- AUXILIARES (Movimiento y Colisiones)

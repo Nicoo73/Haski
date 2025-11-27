@@ -22,6 +22,13 @@ buttonW, buttonH :: Float
 buttonW = 200.0
 buttonH = 50.0
 
+-- Constantes para el botón de Game Over (centrado abajo)
+goButtonX, goButtonY, goButtonW, goButtonH :: Float
+goButtonX = 0.0
+goButtonY = -100.0 -- Abajo
+goButtonW = 200.0
+goButtonH = 60.0
+
 -------------------------------------------------------------
 -- EVENTOS
 -------------------------------------------------------------
@@ -31,6 +38,9 @@ handleEvent :: Event -> GameState -> GameState
 handleEvent (EventKey (MouseButton LeftButton) Down _ (mx, my)) gs 
   | currentScreen gs == Menu = handleMenuClick mx my gs
 
+-- Clic en pantalla de Derrota (Volver al menú / Reiniciar)
+handleEvent (EventKey (MouseButton LeftButton) Down _ (mx, my)) gs 
+  | currentScreen gs == GameOver = handleGameOverClick mx my gs
 -- 2. Teclas de Juego (Solo funcionan si estamos en Playing)
 handleEvent (EventKey (Char c) keyState _ _) gs 
   | currentScreen gs == Playing = case (c, keyState) of
@@ -70,6 +80,18 @@ handleMenuClick mx my gs
       y >= buttonY - buttonH / 2 &&
       y <= buttonY + buttonH / 2
 
+-- NUEVO: Lógica del botón de Game Over
+handleGameOverClick :: Float -> Float -> GameState -> GameState
+handleGameOverClick mx my gs
+  | isInsideButton mx my = initialState { windowSize = windowSize gs } -- Reseteamos todo y volvemos al Menu
+  | otherwise = gs
+  where
+    isInsideButton x y =
+      x >= goButtonX - goButtonW / 2 &&
+      x <= goButtonX + goButtonW / 2 &&
+      y >= goButtonY - goButtonH / 2 &&
+      y <= goButtonY + goButtonH / 2
+      
 -------------------------------------------------------------
 -- FUNCIONES DE JUEGO
 -------------------------------------------------------------

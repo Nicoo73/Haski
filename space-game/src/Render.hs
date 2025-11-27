@@ -36,7 +36,7 @@ render :: Assets -> GameState -> Picture
 render assets gs = case currentScreen gs of
     Menu    -> drawMenuScreen assets gs
     Playing -> drawGameScreen assets gs
-    GameOver -> drawGameScreen assets gs
+    GameOver -> drawGameOverScreen assets gs
 
 drawGameScreen :: Assets -> GameState -> Picture
 drawGameScreen assets gs =
@@ -106,6 +106,44 @@ drawMenuScreen assets gs =
             buttonFill = color (makeColorI 0 0 128 255) (rectangleSolid (buttonW - 2) (buttonH - 2))
             buttonText = translate (-120) (-10) $ scale 0.2 0.2 $ color white $ text "Comenzar a jugar"
         in translate buttonX buttonY $ pictures [buttonFill, buttonOutline, buttonText]
+
+
+-------------------------------------------------------------
+-- NUEVO: RENDER PANTALLA DERROTA
+-------------------------------------------------------------
+drawGameOverScreen :: Assets -> GameState -> Picture
+drawGameOverScreen assets gs =
+    pictures [ scaledBg, drawButton ]
+  where
+    (winWInt, winHInt) = windowSize gs
+    winW = fromIntegral winWInt
+    winH = fromIntegral winHInt
+
+    -- 1. Fondo (derrota.png - 2048x2048)
+    -- Lo escalamos para cubrir toda la pantalla
+    bg = aGameOverBackground assets
+    bgW = 1024.0
+    bgH = 572.0
+    scaleW = winW / bgW
+    scaleH = winH / bgH
+    scaleBg = max scaleW scaleH -- "Cover" fit
+    
+    scaledBg = scale scaleBg scaleBg bg
+
+    -- 2. Botón (botonderrota.png - 3584x1184)
+    -- Lo escalamos y posicionamos abajo
+    btnPic = aGameOverButton assets
+    
+    -- Definimos tamaño deseado en pantalla
+    targetBtnW = 250.0 -- Ancho visual del botón
+    originalBtnW = 632.0
+    scaleBtn = targetBtnW / originalBtnW
+
+    -- Coordenadas (deben coincidir con Input.hs)
+    btnX = 0.0
+    btnY = -100.0 
+
+    drawButton = translate btnX btnY $ scale scaleBtn scaleBtn btnPic
 
 -------------------------------------------------------------
 -- RENDER DE BARRA DE VIDA

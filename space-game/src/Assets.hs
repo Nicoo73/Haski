@@ -19,6 +19,7 @@ data Assets = Assets
   , aMenuBackground :: Picture   -- NUEVO
   , aGameOverBackground :: Picture -- NUEVO
   , aGameOverButton   :: Picture   -- NUEVO
+  , aPlayButton     :: Picture
   , aHealSmallSprite :: Picture
   , aSpeedBoostSprite :: Picture
   , aDamageBoostSprite :: Picture
@@ -93,6 +94,7 @@ loadAssets = do
   -- 2. FONDOS y Botones
   mBackground <- tryLoadDynamic (assetsPath ++ "background/background_1.jpg") "bg_game_temp"
   mMenuBackground <- tryLoadDynamic (assetsPath ++ "background/menu.jpg") "bg_menu_temp"
+  mPlayButton <- tryLoadDynamic (assetsPath ++ "background/botonjugar.png") "btn_play_temp"
   mGameOverBackground <- tryLoadDynamic (assetsPath ++ "background/derrota.jpg") "bg_gameover_temp"
   mGameOverButton <- tryLoadDynamic (assetsPath ++ "background/botonderrota.png") "btn_gameover_temp"
   mDamageText <- tryLoadPNG (assetsPath ++ "stats/damage.png")
@@ -117,6 +119,7 @@ loadAssets = do
   let playerFramesFinal = if null playerFrames then [color (makeColorI 0 0 255 255) $ rectangleSolid 16 16] else playerFrames
       backgroundFinal = case mBackground of Just pic -> pic; Nothing -> color (makeColorI 10 10 30 255) $ rectangleSolid 480 360
       menuBackgroundFinal = case mMenuBackground of Just pic -> pic; Nothing -> color (makeColorI 50 0 100 255) $ rectangleSolid 480 360
+      playButtonFinal = case mPlayButton of Just pic -> pic; Nothing -> color (makeColorI 255 255 255 255) $ rectangleSolid 815 205
       gameOverBackgroundFinal = case mGameOverBackground of Just pic -> pic; Nothing -> color (makeColorI 100 0 0 255) $ rectangleSolid 480 360 
       gameOverButtonFinal = case mGameOverButton of Just pic -> pic; Nothing -> color (makeColorI 200 200 200 255) $ rectangleSolid 200 50
       damageTextFinal = case mDamageText of Just pic -> pic; Nothing  -> color (makeColorI 255 255 255 255) $ rectangleSolid 50 20
@@ -143,6 +146,7 @@ loadAssets = do
     , aAlien3Sprite   = alien3SpriteFinal
     , aMenuBackground = menuBackgroundFinal
     , aGameOverBackground = gameOverBackgroundFinal
+    , aPlayButton     = playButtonFinal
     , aGameOverButton     = gameOverButtonFinal
     , aHealSmallSprite    = healSmallSpriteFinal
     , aSpeedBoostSprite   = speedBoostSpriteFinal

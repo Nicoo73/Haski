@@ -8,20 +8,8 @@ import Assets
 import Enemy
 import Item
 import Boss 
+import Input (buttonX, buttonY)
 
--------------------------------------------------------------
--- CONSTANTES DEL MENÚ
--------------------------------------------------------------
-
--- Posición del botón (centro del mapa)
-buttonX, buttonY :: Float
-buttonX = 0.0
-buttonY = -50.0
-
--- Tamaño del botón
-buttonW, buttonH :: Float
-buttonW = 300.0
-buttonH = 60.0
 
 -- Dimensiones de la imagen de fondo del menú
 -- Ajustado según tu captura de pantalla (1024x572)
@@ -92,7 +80,7 @@ drawGameScreen assets gs =
 drawMenuScreen :: Assets -> GameState -> Picture
 drawMenuScreen assets gs =
     pictures [ scaledMenuBackground
-             , drawMenuButton
+             , drawPlayButton
              ]
   where
     (winWInt, winHInt) = windowSize gs
@@ -105,12 +93,12 @@ drawMenuScreen assets gs =
 
     scaledMenuBackground = scale menuScaleF menuScaleF (aMenuBackground assets)
 
-    drawMenuButton =
-        let 
-            buttonOutline = color white (rectangleWire buttonW buttonH)
-            buttonFill = color (makeColorI 0 0 128 255) (rectangleSolid (buttonW - 2) (buttonH - 2))
-            buttonText = translate (-120) (-10) $ scale 0.2 0.2 $ color white $ text "Comenzar a jugar"
-        in translate buttonX buttonY $ pictures [buttonFill, buttonOutline, buttonText]
+    -- NUEVA LÓGICA PARA EL BOTÓN:
+    btnScaleFactor = 0.4 -- Factor de escala (40% del tamaño original)
+    playButtonPic = aPlayButton assets -- Obtenemos la imagen
+    
+    -- Dibujamos: primero escalamos, luego movemos a la posición de Input.hs
+    drawPlayButton = translate buttonX buttonY $ scale btnScaleFactor btnScaleFactor playButtonPic
 
 
 -------------------------------------------------------------

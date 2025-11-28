@@ -2,6 +2,8 @@ module Input
   ( handleEvent
   , updateGameState
   , dirToVector
+  , buttonX
+  , buttonY
   ) where
 
 import Graphics.Gloss.Interface.Pure.Game
@@ -16,11 +18,11 @@ import Wave
 
 buttonX, buttonY :: Float
 buttonX = 0.0
-buttonY = -80.0  -- Posición vertical del botón
+buttonY = -150.0-- Posición vertical del botón
 
 buttonW, buttonH :: Float
-buttonW = 200.0
-buttonH = 50.0
+buttonW = 815.0 * 0.4  -- Ancho original * escala
+buttonH = 205.0 * 0.4  -- Alto original * escala
 
 -- Constantes para el botón de Game Over (centrado abajo)
 goButtonX, goButtonY, goButtonW, goButtonH :: Float

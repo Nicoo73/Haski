@@ -5,6 +5,7 @@ module Update
 import GameState
 import Enemy
 import Wave
+import Boss
 import Input (updateGameState, dirToVector)
 import Item 
 import Data.List (partition)
@@ -20,8 +21,10 @@ updateWorld dt gs =
     -- 1. Mover Jugador
     gsPlayerMoved = updateGameState dt gs
     
-    -- 2. Spawn Enemigos
-    (spawned, newWave) = spawnWaveIfNeeded dt (wave gsPlayerMoved)
+    -- 2. Spawn Enemigos (solo si no hay boss)
+    (spawned, newWave) = if bossSpawned gsPlayerMoved
+                         then ([], wave gsPlayerMoved)
+                         else spawnWaveIfNeeded dt (wave gsPlayerMoved)
     
     -- 3. Mover Enemigos
     allEnemies = enemies gsPlayerMoved ++ spawned
@@ -44,30 +47,61 @@ updateWorld dt gs =
     -- 7. Colisiones: Bala Enemigo vs Jugador (Calculamos daño)
     (finalEnemyBullets, damageToPlayer) = checkPlayerCollisions movedEnemyBullets (playerPos gsPlayerMoved)
     
-    -- Vida temporal después del daño (incluyendo kamikaze)
-    totalDamage = damageToPlayer + kamikazeDamage
+    -- 8. BOSS: Actualizar boss si existe
+    (updatedBoss, newBossAttacks) = case maybeBoss gsPlayerMoved of
+      Just boss -> let (b, attacks) = updateBoss dt (playerPos gsPlayerMoved) boss
+                   in (Just b, attacks)
+      Nothing -> (Nothing, [])
+    
+    -- 9. Mover ataques del boss
+    allBossAttacks = bossAttacks gsPlayerMoved ++ newBossAttacks
+    movedBossAttacks = updateBossAttacks dt allBossAttacks
+    
+    -- 10. Colisiones: Bala Jugador vs Boss
+    (bulletsAfterBoss, finalBoss, bossDefeated) = case updatedBoss of
+      Just boss -> let (b, finalB, defeated) = checkBossCollisions finalBullets boss
+                   in (b, Just finalB, defeated)
+      Nothing -> (finalBullets, Nothing, False)
+    
+    -- 11. Colisiones: Ataques Boss vs Jugador
+    (finalBossAttacks, bossAttackDamage) = checkBossAttackCollisions movedBossAttacks (playerPos gsPlayerMoved)
+    
+    -- Vida temporal después del daño (incluyendo kamikaze y boss)
+    totalDamage = damageToPlayer + kamikazeDamage + bossAttackDamage
     healthAfterDamage = max 0 (currentHealth gsPlayerMoved - totalDamage)
 
     in if healthAfterDamage <= 0
      then gs { currentScreen = GameOver, currentHealth = 0 }
      else
         let
-            -- ... (Lógica existente de items y oleadas: pasos 8 y 9) ...
+            -- ... (Lógica existente de items y oleadas: pasos 12 y 13) ...
             gsWithDamage = gsPlayerMoved { currentHealth = healthAfterDamage }
             currentItems = items gsPlayerMoved ++ droppedItems ++ kamikazeItems
             (remainingItems, gsItemsApplied) = checkItemCollection (playerPos gsPlayerMoved) currentItems gsWithDamage
             
-            isWaveFinished = null finalEnemies && enemiesLeft newWave == 0
-            (newWaveState, newWaveCount) = if isWaveFinished
+            -- Verificar si primera oleada está completa para spawnar boss
+            isFirstWaveComplete = waveCount gsPlayerMoved == 1 && null finalEnemies && enemiesLeft newWave == 0
+            shouldSpawnBoss = isFirstWaveComplete && not (bossSpawned gsPlayerMoved)
+            
+            newBoss = if shouldSpawnBoss then Just createBoss else finalBoss
+            newBossSpawned = shouldSpawnBoss || bossSpawned gsPlayerMoved
+            
+            -- Si el boss fue derrotado, continuar con oleadas normales
+            (newWaveState, newWaveCount) = if bossDefeated
+                                            then (nextWave 2, 2)  -- Empezar oleada 2
+                                            else if not newBossSpawned && null finalEnemies && enemiesLeft newWave == 0
                                             then (nextWave (waveCount gsPlayerMoved + 1), waveCount gsPlayerMoved + 1)
                                             else (newWave, waveCount gsPlayerMoved)
         in gsItemsApplied { 
              enemies = finalEnemies,
-             bullets = finalBullets,
+             bullets = bulletsAfterBoss,
              enemyBullets = finalEnemyBullets,
              items   = remainingItems,
              wave    = newWaveState,
-             waveCount = newWaveCount
+             waveCount = newWaveCount,
+             maybeBoss = if bossDefeated then Nothing else newBoss,
+             bossAttacks = finalBossAttacks,
+             bossSpawned = if bossDefeated then False else newBossSpawned
            }
 
 -------------------------------------------------------------
@@ -205,3 +239,61 @@ applyItemEffect item gs@GameState{ currentStats = cs } =
           newDamage      = playerDamage cs + 5
       in gs { currentStats = cs { playerDamageBonus = newDamageBonus
                                 , playerDamage     = newDamage } }
+
+-------------------------------------------------------------
+-- FUNCIONES DEL BOSS
+-------------------------------------------------------------
+
+-- Mover ataques del boss
+updateBossAttacks :: Float -> [BossAttack] -> [BossAttack]
+updateBossAttacks dt attacks =
+  let terrainW = 640.0
+      terrainH = 360.0
+      mapX = terrainW / 2
+      mapY = terrainH / 2
+      
+      moveAttack attack@BossAttack{ attackPos = (px, py), attackDir = dir, attackSpeed = speed } =
+        let (vx, vy) = dirToVector dir
+            newX = px + vx * speed * dt
+            newY = py + vy * speed * dt
+        in attack { attackPos = (newX, newY) }
+      
+      isOffScreen attack =
+        let (x, y) = attackPos attack
+        in x < -mapX - 50 || x > mapX + 50 || y < -mapY - 50 || y > mapY + 50
+      
+  in filter (not . isOffScreen) (map moveAttack attacks)
+
+-- Colisiones: Balas del jugador vs Boss
+checkBossCollisions :: [Bullet] -> Boss -> ([Bullet], Boss, Bool)
+checkBossCollisions bullets boss =
+  let collisionDistSq = (3.0 + bossRadius) ^ 2
+      (bx, by) = bossPos boss
+      isColliding b = let (px, py) = bulletPos b in (px - bx)^2 + (py - by)^2 < collisionDistSq
+      
+      (hits, misses) = partition isColliding bullets
+      
+      -- Aplicar daño acumulado
+      totalDamage = sum (map bulletDamage hits)
+      newHealth = bossHealth boss - totalDamage
+      defeated = newHealth <= 0
+      
+      updatedBoss = boss { bossHealth = max 0 newHealth }
+      
+  in (misses, updatedBoss, defeated)
+
+-- Colisiones: Ataques del boss vs Jugador
+checkBossAttackCollisions :: [BossAttack] -> (Float, Float) -> ([BossAttack], Int)
+checkBossAttackCollisions attacks (px, py) =
+  let colDistSq attack = case attackType attack of
+        AT1Arrows -> (8.0 + 16.0) ^ 2  -- Flecha más grande
+        AT2Ball -> (8.0 + 8.0) ^ 2     -- Bola más pequeña
+      
+      isHit attack = 
+        let (ax, ay) = attackPos attack
+        in (ax - px)^2 + (ay - py)^2 < colDistSq attack
+      
+      (hits, misses) = partition isHit attacks
+      totalDamage = sum (map attackDamage hits)
+      
+  in (misses, totalDamage)

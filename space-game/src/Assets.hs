@@ -23,7 +23,10 @@ data Assets = Assets
   , aSpeedBoostSprite :: Picture
   , aDamageBoostSprite :: Picture
   , aDamageText         :: Picture 
-  , aSpeedText         :: Picture 
+  , aSpeedText         :: Picture
+  , aBossSprite     :: Picture
+  , aAttack1Sprite  :: Picture
+  , aAttack2Sprite  :: Picture
   }
 
 -- Wrapper seguro para cargar PNG
@@ -105,6 +108,11 @@ loadAssets = do
   mSpeedBoostSprite <- tryLoadPNG (assetsPath ++ "items/spd.png")
   mDamageBoostSprite <- tryLoadPNG (assetsPath ++ "items/dmg.png")
 
+  -- 5. BOSS Y ATAQUES
+  mBossSprite <- tryLoadPNG (assetsPath ++ "enemies/boss.png")
+  mAttack1Sprite <- tryLoadPNG (assetsPath ++ "attacks/at1.png")
+  mAttack2Sprite <- tryLoadPNG (assetsPath ++ "attacks/at2.png")
+
   -- Fallbacks
   let playerFramesFinal = if null playerFrames then [color (makeColorI 0 0 255 255) $ rectangleSolid 16 16] else playerFrames
       backgroundFinal = case mBackground of Just pic -> pic; Nothing -> color (makeColorI 10 10 30 255) $ rectangleSolid 480 360
@@ -123,6 +131,10 @@ loadAssets = do
       speedBoostSpriteFinal = case mSpeedBoostSprite of Just pic -> pic; Nothing -> color (makeColorI 0 0 255 255) $ rectangleSolid 16 16
       damageBoostSpriteFinal = case mDamageBoostSprite of Just pic -> pic; Nothing -> color (makeColorI 255 0 255 255) $ rectangleSolid 16 16
 
+      bossSpriteFinal = case mBossSprite of Just pic -> pic; Nothing -> color (makeColorI 128 0 128 255) $ rectangleSolid 64 64
+      attack1SpriteFinal = case mAttack1Sprite of Just pic -> pic; Nothing -> color (makeColorI 255 255 0 255) $ rectangleSolid 32 8
+      attack2SpriteFinal = case mAttack2Sprite of Just pic -> pic; Nothing -> color (makeColorI 255 128 0 255) $ rectangleSolid 16 16
+
   return Assets
     { aPlayerFrames   = playerFramesFinal
     , aBackground     = backgroundFinal
@@ -137,4 +149,7 @@ loadAssets = do
     , aDamageBoostSprite  = damageBoostSpriteFinal
     , aDamageText       = damageTextFinal
     , aSpeedText       = speedTextFinal
+    , aBossSprite = bossSpriteFinal
+    , aAttack1Sprite = attack1SpriteFinal
+    , aAttack2Sprite = attack2SpriteFinal
     }

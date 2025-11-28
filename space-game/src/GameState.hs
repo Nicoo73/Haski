@@ -21,6 +21,7 @@ module GameState
 import Enemy (Direction(..))
 import qualified Enemy as E
 import Item (Item)
+import qualified Boss as B
 
 -------------------------------------------------------------
 -- TIPOS DE PANTALLA
@@ -95,7 +96,10 @@ data GameState = GameState
   , wave           :: Wave
   , waveCount      :: Int
   , currentHealth  :: Int          
-  , currentStats   :: PlayerStats  
+  , currentStats   :: PlayerStats
+  , maybeBoss      :: Maybe B.Boss
+  , bossAttacks    :: [B.BossAttack]
+  , bossSpawned    :: Bool
   } deriving (Show)
 
 -------------------------------------------------------------
@@ -146,7 +150,10 @@ initialState = GameState
   , wave          = initialWave
   , waveCount     = 1
   , currentHealth = playerHealth playerStats
-  , currentStats  = playerStats  
+  , currentStats  = playerStats
+  , maybeBoss     = Nothing
+  , bossAttacks   = []
+  , bossSpawned   = False
   }
 
 -------------------------------------------------------------

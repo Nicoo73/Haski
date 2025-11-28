@@ -6,7 +6,8 @@ import Graphics.Gloss
 import GameState
 import Assets
 import Enemy
-import Item 
+import Item
+import Boss 
 
 -------------------------------------------------------------
 -- CONSTANTES DEL MENÚ
@@ -43,10 +44,13 @@ drawGameScreen assets gs =
     pictures [ scaledBackground
              , drawItems assets gs 
              , drawEnemies assets gs
+             , drawBoss assets gs
+             , drawBossAttacks assets gs
              , drawBullets gs
              , drawEnemyBullets gs
              , scaledPlayer
              , drawHealthBar gs
+             , drawBossHealthBar gs
              , drawHUD assets gs  
              ]
   where
@@ -249,6 +253,72 @@ drawItems assets gs = pictures (map drawItem (items gs))
               SpeedBoost  -> aSpeedBoostSprite assets
               DamageBoost -> aDamageBoostSprite assets
       in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ itemSprite
+
+-------------------------------------------------------------
+-- RENDER DEL BOSS
+-------------------------------------------------------------
+
+drawBoss :: Assets -> GameState -> Picture
+drawBoss assets gs = case maybeBoss gs of
+  Nothing -> blank
+  Just boss -> 
+    let (winW, winH) = windowSize gs
+        terrainW = 480.0
+        terrainH = 360.0
+        scaleX = fromIntegral winW / terrainW
+        scaleY = fromIntegral winH / terrainH
+        (x, y) = bossPos boss
+    in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ aBossSprite assets
+
+drawBossAttacks :: Assets -> GameState -> Picture
+drawBossAttacks assets gs = pictures (map drawAttack (bossAttacks gs))
+  where
+    (winW, winH) = windowSize gs
+    terrainW = 480.0
+    terrainH = 360.0
+    scaleX = fromIntegral winW / terrainW
+    scaleY = fromIntegral winH / terrainH
+
+    drawAttack attack =
+      let (x, y) = attackPos attack
+          attackSprite = case attackType attack of
+            AT1Arrows -> aAttack1Sprite assets
+            AT2Ball -> aAttack2Sprite assets
+          
+          -- Si es AT1 y va hacia la izquierda, voltear el sprite horizontalmente
+          shouldFlip = attackType attack == AT1Arrows && attackDir attack == DLeft
+          flippedSprite = if shouldFlip
+                         then scale (-1) 1 attackSprite  -- Voltear horizontalmente
+                         else attackSprite
+          
+      in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ flippedSprite
+
+drawBossHealthBar :: GameState -> Picture
+drawBossHealthBar gs = case maybeBoss gs of
+  Nothing -> blank
+  Just boss ->
+    let (winWInt, winHInt) = windowSize gs
+        maxHP = fromIntegral (bossMaxHealth boss)
+        currentHP = fromIntegral (bossHealth boss)
+        barW = 200.0
+        barH = 15.0
+        
+        margin = 20.0
+        barX = 0  -- Centrado horizontalmente
+        barY = fromIntegral winHInt / 2 - margin - (barH / 2) - 30  -- Debajo de la barra del jugador
+        
+        fillPct = max 0 (currentHP / maxHP)
+        fillW = barW * fillPct
+        
+        bgBar = color (makeColorI 50 50 50 255) $ rectangleSolid barW barH
+        fillBar = translate (-(barW - fillW)/2) 0 $
+                  color (makeColorI 150 0 150 255) $ rectangleSolid fillW barH
+        borderBar = color white $ rectangleWire barW barH
+        
+        label = translate (-60) (barH + 5) $ 
+                scale 0.15 0.15 $ color white $ text "BOSS"
+        
+    in translate barX barY $ pictures [bgBar, fillBar, borderBar, label]
 
 -------------------------------------------------------------
 -- RENDER DEL HUD (Opcional)

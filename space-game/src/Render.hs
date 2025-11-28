@@ -47,7 +47,7 @@ drawGameScreen assets gs =
              , drawEnemyBullets gs
              , scaledPlayer
              , drawHealthBar gs
-             , drawHUD gs  
+             , drawHUD assets gs  
              ]
   where
     (winW, winH) = windowSize gs
@@ -254,8 +254,8 @@ drawItems assets gs = pictures (map drawItem (items gs))
 -- RENDER DEL HUD (Opcional)
 -------------------------------------------------------------
 
-drawHUD :: GameState -> Picture
-drawHUD gs = pictures [damageText, speedText]
+drawHUD :: Assets -> GameState -> Picture
+drawHUD assets gs = pictures [damagePic, damageValue, speedPic, speedValue]
   where
     (winWInt, winHInt) = windowSize gs
     stats = currentStats gs
@@ -265,18 +265,26 @@ drawHUD gs = pictures [damageText, speedText]
     spdBase  = playerMoveSpeed stats
     spdBonus = playerSpeedBonus stats
 
-    -- Daño (arriba a la izquierda)
-    damageText = translate (-fromIntegral winWInt / 2 + 20)
-                           (fromIntegral winHInt / 2 - 40) $
+    -- Imagen del rótulo "Daño"
+    damagePic = translate (-fromIntegral winWInt / 2 + 50)
+                          (fromIntegral winHInt / 2 - 50) $
+                scale 0.5 0.5 (aDamageText assets)
+
+    -- Valor numérico al lado de la imagen
+    damageValue = translate (-fromIntegral winWInt / 2 + 95)
+                             (fromIntegral winHInt / 2 - 55) $
+                  scale 0.15 0.15 $
+                  color white $
+                  text (": " ++ show dmgBase ++ " (+" ++ show dmgBonus ++ ")")
+
+    -- Imagen del rótulo "Velocidad"
+    speedPic = translate (-fromIntegral winWInt / 2 + 80)
+                          (fromIntegral winHInt / 2 - 85) $
+                scale 0.5 0.5 (aSpeedText assets)
+
+    -- Velocidad (texto normal)
+    speedValue  = translate (-fromIntegral winWInt / 2 + 170)
+                           (fromIntegral winHInt / 2 - 90) $
                  scale 0.15 0.15 $
                  color white $
-                 text ("Daño: " ++ show dmgBase ++ " (+" ++ show dmgBonus ++ ")")
-
-    -- Velocidad (debajo del daño, también a la izquierda)
-    speedText  = translate (-fromIntegral winWInt / 2 + 20)
-                           (fromIntegral winHInt / 2 - 70) $
-                 scale 0.15 0.15 $
-                 color white $
-                 text ("Velocidad: " ++ show (round spdBase) ++ " (+" ++ show (round spdBonus) ++ ")")
-
-
+                 text (": " ++ show spdBase ++ " (+" ++ show spdBonus ++ ")")

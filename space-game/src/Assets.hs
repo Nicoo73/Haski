@@ -22,6 +22,8 @@ data Assets = Assets
   , aHealSmallSprite :: Picture
   , aSpeedBoostSprite :: Picture
   , aDamageBoostSprite :: Picture
+  , aDamageText         :: Picture 
+  , aSpeedText         :: Picture 
   }
 
 -- Wrapper seguro para cargar PNG
@@ -90,6 +92,8 @@ loadAssets = do
   mMenuBackground <- tryLoadDynamic (assetsPath ++ "background/menu.jpg") "bg_menu_temp"
   mGameOverBackground <- tryLoadDynamic (assetsPath ++ "background/derrota.jpg") "bg_gameover_temp"
   mGameOverButton <- tryLoadDynamic (assetsPath ++ "background/botonderrota.png") "btn_gameover_temp"
+  mDamageText <- tryLoadPNG (assetsPath ++ "stats/damage.png")
+  mSpeedText <- tryLoadPNG (assetsPath ++ "stats/speed.png")
 
   -- 3. ENEMIGOS
   mAlien1Sprite <- tryLoadPNG (assetsPath ++ "enemies/alien1.png")
@@ -107,6 +111,9 @@ loadAssets = do
       menuBackgroundFinal = case mMenuBackground of Just pic -> pic; Nothing -> color (makeColorI 50 0 100 255) $ rectangleSolid 480 360
       gameOverBackgroundFinal = case mGameOverBackground of Just pic -> pic; Nothing -> color (makeColorI 100 0 0 255) $ rectangleSolid 480 360 
       gameOverButtonFinal = case mGameOverButton of Just pic -> pic; Nothing -> color (makeColorI 200 200 200 255) $ rectangleSolid 200 50
+      damageTextFinal = case mDamageText of Just pic -> pic; Nothing  -> color (makeColorI 255 255 255 255) $ rectangleSolid 50 20
+      speedTextFinal = case mSpeedText of Just pic -> pic; Nothing  -> color (makeColorI 255 255 255 255) $ rectangleSolid 50 20
+
 
       alien1SpriteFinal = case mAlien1Sprite of Just pic -> pic; Nothing -> color (makeColorI 255 50 50 255) $ rectangleSolid 24 24
       alien2SpriteFinal = case mAlien2Sprite of Just pic -> pic; Nothing -> color (makeColorI 50 255 50 255) $ rectangleSolid 24 24
@@ -128,4 +135,6 @@ loadAssets = do
     , aHealSmallSprite    = healSmallSpriteFinal
     , aSpeedBoostSprite   = speedBoostSpriteFinal
     , aDamageBoostSprite  = damageBoostSpriteFinal
+    , aDamageText       = damageTextFinal
+    , aSpeedText       = speedTextFinal
     }

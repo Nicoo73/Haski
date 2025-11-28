@@ -17,6 +17,8 @@ data Assets = Assets
   , aAlien2Sprite :: Picture
   , aAlien3Sprite :: Picture
   , aMenuBackground :: Picture   -- NUEVO
+  , aMenuBgWidth    :: Float
+  , aMenuBgHeight   :: Float
   , aGameOverBackground :: Picture -- NUEVO
   , aGameOverButton   :: Picture   -- NUEVO
   , aHealSmallSprite :: Picture
@@ -97,6 +99,14 @@ loadAssets = do
   mGameOverButton <- tryLoadDynamic (assetsPath ++ "background/botonderrota.png") "btn_gameover_temp"
   mDamageText <- tryLoadPNG (assetsPath ++ "stats/damage.png")
   mSpeedText <- tryLoadPNG (assetsPath ++ "stats/speed.png")
+  -- 📏 Extraer tamaño original de la imagen del menú
+  result <- readImage (assetsPath ++ "background/menu.jpg")
+  menuBgSize <- case result of
+    Right dyn ->
+      let img = convertRGBA8 dyn
+      in pure (fromIntegral (imageWidth img), fromIntegral (imageHeight img))
+    Left _ ->
+      pure (480, 360)  -- fallback si falla
 
   -- 3. ENEMIGOS
   mAlien1Sprite <- tryLoadPNG (assetsPath ++ "enemies/alien1.png")
@@ -141,7 +151,9 @@ loadAssets = do
     , aAlien1Sprite   = alien1SpriteFinal
     , aAlien2Sprite   = alien2SpriteFinal
     , aAlien3Sprite   = alien3SpriteFinal
-    , aMenuBackground = menuBackgroundFinal
+    , aMenuBackground = maybe (color (makeColorI 50 0 100 255) $ rectangleSolid 480 360) id mMenuBackground
+    , aMenuBgWidth    = fst menuBgSize
+    , aMenuBgHeight   = snd menuBgSize
     , aGameOverBackground = gameOverBackgroundFinal
     , aGameOverButton     = gameOverButtonFinal
     , aHealSmallSprite    = healSmallSpriteFinal

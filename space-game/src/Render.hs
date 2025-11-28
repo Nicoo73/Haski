@@ -98,18 +98,30 @@ drawMenuScreen assets gs =
     (winWInt, winHInt) = windowSize gs
     winW = fromIntegral winWInt
     winH = fromIntegral winHInt
-    
+
+    -- Tamaño original de la imagen del menú (guardado en Assets.hs)
+    menuBgW = aMenuBgWidth assets
+    menuBgH = aMenuBgHeight assets
+
+    -- Escala para que la imagen cubra toda la ventana
     menuScaleW = winW / menuBgW
     menuScaleH = winH / menuBgH
-    menuScaleF = max menuScaleW menuScaleH 
+    menuScaleF = max menuScaleW menuScaleH
 
+    -- Fondo escalado
     scaledMenuBackground = scale menuScaleF menuScaleF (aMenuBackground assets)
+
+    -- Botón de "Comenzar a jugar"
+    buttonW = 300
+    buttonH = 60
+    buttonX = 0
+    buttonY = -100
 
     drawMenuButton =
         let 
             buttonOutline = color white (rectangleWire buttonW buttonH)
-            buttonFill = color (makeColorI 0 0 128 255) (rectangleSolid (buttonW - 2) (buttonH - 2))
-            buttonText = translate (-120) (-10) $ scale 0.2 0.2 $ color white $ text "Comenzar a jugar"
+            buttonFill    = color (makeColorI 0 0 128 255) (rectangleSolid (buttonW - 2) (buttonH - 2))
+            buttonText    = translate (-120) (-10) $ scale 0.2 0.2 $ color white $ text "Comenzar a jugar"
         in translate buttonX buttonY $ pictures [buttonFill, buttonOutline, buttonText]
 
 
@@ -350,7 +362,7 @@ drawHUD assets gs = pictures [damagePic, damageValue, speedPic, speedValue]
     -- Imagen del rótulo "Velocidad"
     speedPic = translate (-fromIntegral winWInt / 2 + 80)
                           (fromIntegral winHInt / 2 - 85) $
-                scale 0.5 0.5 (aSpeedText assets)
+                scale 0.25 0.25 (aSpeedText assets)
 
     -- Velocidad (texto normal)
     speedValue  = translate (-fromIntegral winWInt / 2 + 170)

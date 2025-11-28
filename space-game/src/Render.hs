@@ -47,6 +47,7 @@ drawGameScreen assets gs =
              , drawEnemyBullets gs
              , scaledPlayer
              , drawHealthBar gs
+             , drawHUD gs  
              ]
   where
     (winW, winH) = windowSize gs
@@ -254,4 +255,28 @@ drawItems assets gs = pictures (map drawItem (items gs))
 -------------------------------------------------------------
 
 drawHUD :: GameState -> Picture
-drawHUD gs = blank
+drawHUD gs = pictures [damageText, speedText]
+  where
+    (winWInt, winHInt) = windowSize gs
+    stats = currentStats gs
+
+    dmgBase  = playerDamage stats
+    dmgBonus = playerDamageBonus stats
+    spdBase  = playerMoveSpeed stats
+    spdBonus = playerSpeedBonus stats
+
+    -- Daño (arriba a la izquierda)
+    damageText = translate (-fromIntegral winWInt / 2 + 20)
+                           (fromIntegral winHInt / 2 - 40) $
+                 scale 0.15 0.15 $
+                 color white $
+                 text ("Daño: " ++ show dmgBase ++ " (+" ++ show dmgBonus ++ ")")
+
+    -- Velocidad (debajo del daño, también a la izquierda)
+    speedText  = translate (-fromIntegral winWInt / 2 + 20)
+                           (fromIntegral winHInt / 2 - 70) $
+                 scale 0.15 0.15 $
+                 color white $
+                 text ("Velocidad: " ++ show (round spdBase) ++ " (+" ++ show (round spdBonus) ++ ")")
+
+

@@ -187,11 +187,21 @@ checkItemCollection (px, py) items gs =
       gsNew = foldr applyItemEffect gs collected
   in (remaining, gsNew)
 
--- APLICAR EFECTO DEL ÍTEM
-applyItemEffect :: Item -> GameState -> GameState
+-- APLICAR EFECTO DEL ÍTEMapplyItemEffect :: Item -> GameState -> GameState
 applyItemEffect item gs@GameState{ currentStats = cs } = 
   case itemType item of
     -- Cura 20 de vida, respetando el máximo definido en playerHealth de los stats
-    HealSmall   -> gs { currentHealth = min (playerHealth cs) (currentHealth gs + 20) }
-    SpeedBoost  -> gs { currentStats = cs { playerSpeedBonus = playerSpeedBonus cs + 25.0 } } 
-    DamageBoost -> gs { currentStats = cs { playerDamageBonus = playerDamageBonus cs + 5 } }
+    HealSmall ->
+      gs { currentHealth = min (playerHealth cs) (currentHealth gs + 20) }
+
+    SpeedBoost ->
+      let newSpeedBonus = playerSpeedBonus cs + 25.0
+          newMoveSpeed  = playerMoveSpeed cs + 25.0
+      in gs { currentStats = cs { playerSpeedBonus = newSpeedBonus
+                                , playerMoveSpeed  = newMoveSpeed } }
+
+    DamageBoost ->
+      let newDamageBonus = playerDamageBonus cs + 5
+          newDamage      = playerDamage cs + 5
+      in gs { currentStats = cs { playerDamageBonus = newDamageBonus
+                                , playerDamage     = newDamage } }

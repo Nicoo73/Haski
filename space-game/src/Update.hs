@@ -93,13 +93,18 @@ updateWorld dt gs =
             newBoss = if shouldSpawnBoss then Just createBoss else finalBoss
             newBossSpawned = shouldSpawnBoss || bossSpawned gsPlayerMoved
             
+            -- Si el boss fue derrotado, cambiar a pantalla de victoria
+            gsAfterBoss = if bossDefeated
+                         then gsItemsApplied { currentScreen = Victory, victoryTimer = 0.0 }
+                         else gsItemsApplied
+            
             -- Si el boss fue derrotado, continuar con oleadas normales
             (newWaveState, newWaveCount) = if bossDefeated
                                             then (nextWave 4, 4)  -- Empezar oleada 4
                                             else if not newBossSpawned && null finalEnemies && enemiesLeft newWave == 0 && waveCount gsPlayerMoved < 3
                                             then (nextWave (waveCount gsPlayerMoved + 1), waveCount gsPlayerMoved + 1)
                                             else (newWave, waveCount gsPlayerMoved)
-        in gsItemsApplied { 
+        in gsAfterBoss { 
              enemies = finalEnemies,
              bullets = bulletsAfterBoss,
              enemyBullets = finalEnemyBullets,

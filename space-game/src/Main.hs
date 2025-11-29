@@ -28,9 +28,15 @@ fps :: Int
 fps = 60
 
 -- FUNCIÓN CLAVE: Detiene la actualización del mundo si estamos en el Menú
+-- y maneja el timer de la pantalla de victoria
 safeUpdateWorld :: Float -> GameState -> GameState
 safeUpdateWorld dt gs
     | currentScreen gs == Playing = updateWorld dt gs
+    | currentScreen gs == Victory = 
+        let newTimer = victoryTimer gs + dt
+        in if newTimer >= 3.0
+           then initialState { windowSize = windowSize gs }  -- Volver al menú después de 3 segundos
+           else gs { victoryTimer = newTimer }
     | otherwise                   = gs -- ¡Pausa lógica en el menú!
 
 main :: IO ()

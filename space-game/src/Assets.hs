@@ -30,6 +30,7 @@ data Assets = Assets
   , aBossSprite      :: Picture
   , aAttack1Sprite  :: Picture
   , aAttack2Sprite  :: Picture
+  , aVictoryBackground :: Picture  -- NUEVO: Fondo de victoria
   }
 
 -- Wrapper seguro para cargar PNG
@@ -107,6 +108,7 @@ loadAssets = do
   -- NUEVO: Cargar fondo de controles
   mControlsBackground <- tryLoadDynamic (assetsPath ++ "background/fondocontroles.jpg") "bg_controls"
   mGameOverBackground <- tryLoadDynamic (assetsPath ++ "background/derrota.jpg") "bg_gameover"
+  mVictoryBackground <- tryLoadPNG (assetsPath ++ "background/victoria.png")
   
   -- 3. BOTONES
   mPlayButton <- tryLoadPNG (assetsPath ++ "background/botonjugar.png")
@@ -141,6 +143,9 @@ loadAssets = do
       
       -- Fallback de controles (gris oscuro si falla la imagen)
       controlsBackgroundFinal = case mControlsBackground of Just pic -> pic; Nothing -> color (makeColorI 30 30 30 255) $ rectangleSolid 480 360
+      
+      -- Fallback de victoria (dorado si falla la imagen)
+      victoryBackgroundFinal = case mVictoryBackground of Just pic -> pic; Nothing -> color (makeColorI 255 215 0 255) $ rectangleSolid 480 360
 
       playButtonFinal = case mPlayButton of Just pic -> pic; Nothing -> color (makeColorI 255 255 255 255) $ rectangleSolid 815 205
       controlsButtonFinal = case mControlsButton of Just pic -> pic; Nothing -> color (makeColorI 200 200 0 255) $ rectangleSolid 966 230
@@ -183,4 +188,5 @@ loadAssets = do
     , aBossSprite = bossSpriteFinal
     , aAttack1Sprite = attack1SpriteFinal
     , aAttack2Sprite = attack2SpriteFinal
+    , aVictoryBackground = victoryBackgroundFinal
     }

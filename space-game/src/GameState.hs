@@ -27,8 +27,8 @@ import qualified Boss as B
 -- TIPOS DE PANTALLA
 -------------------------------------------------------------
 
--- NUEVO: Agregado estado Controls
-data ScreenState = Menu | Playing | GameOver | Controls
+-- NUEVO: Agregado estado Controls y Victory
+data ScreenState = Menu | Playing | GameOver | Controls | Victory
   deriving (Eq, Show)
 
 -------------------------------------------------------------
@@ -101,6 +101,7 @@ data GameState = GameState
   , bossAttacks    :: [B.BossAttack]
   , bossSpawned    :: Bool
   , bossSpawnTimer :: Float  -- Timer para delay de 3s antes de spawnar boss
+  , victoryTimer   :: Float  -- Timer para pantalla de victoria (3s)
   } deriving (Show)
 
 -------------------------------------------------------------
@@ -156,6 +157,7 @@ initialState = GameState
   , bossAttacks   = []
   , bossSpawned   = False
   , bossSpawnTimer = 0.0
+  , victoryTimer   = 0.0
   }
 
 -------------------------------------------------------------

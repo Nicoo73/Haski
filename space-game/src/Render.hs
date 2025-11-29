@@ -25,6 +25,7 @@ render assets gs = case currentScreen gs of
     Playing -> drawGameScreen assets gs
     GameOver -> drawGameOverScreen assets gs
     Controls -> drawControlsScreen assets gs
+    Victory -> drawVictoryScreen assets gs
 
 drawGameScreen :: Assets -> GameState -> Picture
 drawGameScreen assets gs =
@@ -383,9 +384,33 @@ drawWaveCounter gs =
                           _ -> 0
         waveText = "Wave " ++ show completedWaves ++ "/3"
         
-        -- Posición: arriba a la derecha
-        xPos = fromIntegral winWInt / 2 - 120
+        -- Posición: arriba a la derecha (más a la izquierda para ver ambos números)
+        xPos = fromIntegral winWInt / 2 - 180
         yPos = fromIntegral winHInt / 2 - 50
         
     in translate xPos yPos $ scale 0.2 0.2 $ color white $ text waveText
   else blank
+
+-------------------------------------------------------------
+-- RENDER PANTALLA VICTORIA
+-------------------------------------------------------------
+
+drawVictoryScreen :: Assets -> GameState -> Picture
+drawVictoryScreen assets gs =
+    pictures [ scaledBg ]
+  where
+    (winWInt, winHInt) = windowSize gs
+    winW = fromIntegral winWInt
+    winH = fromIntegral winHInt
+    
+    -- Dimensiones de victoria.png (ajustar según la imagen real)
+    bgW = 1024.0
+    bgH = 572.0
+
+    -- Calcular escala para cubrir la pantalla (estilo "cover")
+    scaleW = winW / bgW
+    scaleH = winH / bgH
+    finalScale = max scaleW scaleH
+
+    bgPic = aVictoryBackground assets
+    scaledBg = scale finalScale finalScale bgPic

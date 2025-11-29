@@ -105,7 +105,7 @@ cabal update
 cabal build
 ```
 
-## 3. Ejecución
+### 3. Ejecución
 Puedes compilar y ejecutar el juego directamente con:
 
 ```bash

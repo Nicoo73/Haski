@@ -22,31 +22,6 @@ El juego incluye un **menú de instrucciones** que explica los controles y descr
 
 ---
 
-##  Requisitos cumplidos
-
-1. **Uso de la Mónada State**  
-   - El estado del juego (`GameState`) se maneja con la Mónada State, permitiendo actualizar vida, enemigos, ítems y lógica de combate de forma funcional.
-
-2. **Juego en terminal y 2D**  
-   - El juego corre en entorno gráfico 2D usando Gloss, cumpliendo con el requisito de visualización simple.
-
-3. **Control con teclado**  
-   - El jugador puede moverse y disparar usando teclas específicas (WASD + Espacio).
-
-4. **Items que afectan atributos**  
-   - Hay ítems que modifican atributos como vida, daño y velocidad del jugador.
-
-5. **Objetivo del juego**  
-   - El objetivo es sobrevivir a las oleadas y vencer al jefe final.
-
-6. **Obstáculos y enemigos**  
-   - Enemigos con distintos patrones de ataque aparecen en oleadas. Algunos tienen mecánicas especiales como explosión kamikaze.
-
-7. **Originalidad**  
-   - Se implementó un sistema de oleadas progresivas, un jefe final con mecánicas distintas, y un menú de instrucciones que informa al jugador.
-
----
-
 ##  Características Principales
 
 - Movimiento libre en 2D.  

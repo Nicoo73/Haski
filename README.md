@@ -182,7 +182,8 @@ Utilizado en:
 play window bgColor fps initialState render handleInput update
 ```
 ---
-🚀 Oleadas y Jefe Final
+## 🚀 Oleadas y Jefe Final
+
 El sistema de oleadas es el núcleo del desafío en Space War. El jugador debe sobrevivir a múltiples rondas de enemigos que se vuelven progresivamente más difíciles.
 
 Cada oleada incrementa la cantidad, velocidad y agresividad de las naves enemigas.
@@ -211,7 +212,9 @@ Los dibujos se representan mediante `Picture` y `Pictures`.
 
 ---
 ## 🎯 Conclusión
+```
 Space War es un videojuego funcional en Haskell que cumple con los requisitos de la tarea INFO188. Se implementaron mecánicas de oleadas, combate, jefe final, ítems interactivos y un menú de instrucciones, todo gestionado mediante la Mónada State. El proyecto demuestra una estructura modular, uso correcto de efectos IO, y una experiencia de juego clara y progresiva.
 
+```
 ---
 

@@ -1,11 +1,11 @@
 # Space War (Haskell + Gloss)
 
-## 📖 Informe del Proyecto
+## Informe del Proyecto
 
 Este proyecto corresponde a la **Tarea 1 del curso INFO188 (2025)**, donde se debía implementar un videojuego estilo *Action RPG* en Haskell, haciendo uso de la **Mónada State** y cumpliendo con los requisitos mínimos establecidos.
 
 ---
-## 👥 Integrantes del Grupo
+## Integrantes del Grupo
 Ian Cuevas
 
 Marcelo Lara
@@ -24,7 +24,7 @@ El juego incluye un **menú de instrucciones** que explica los controles y descr
 
 ---
 
-## ✅ Requisitos cumplidos
+##  Requisitos cumplidos
 
 1. **Uso de la Mónada State**  
    - El estado del juego (`GameState`) se maneja con la Mónada State, permitiendo actualizar vida, enemigos, ítems y lógica de combate de forma funcional.
@@ -49,7 +49,7 @@ El juego incluye un **menú de instrucciones** que explica los controles y descr
 
 ---
 
-## ✨ Características Principales
+##  Características Principales
 
 - Movimiento libre en 2D.  
 - Oleadas de enemigos con dificultad creciente.  
@@ -63,7 +63,7 @@ El juego incluye un **menú de instrucciones** que explica los controles y descr
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+##  Tecnologías Utilizadas
 
 - **Haskell (GHC)**  
 - **Gloss**  
@@ -182,7 +182,7 @@ Utilizado en:
 play window bgColor fps initialState render handleInput update
 ```
 ---
-## 🚀 Oleadas y Jefe Final
+##  Oleadas y Jefe Final
 
 El sistema de oleadas es el núcleo del desafío en Space War. El jugador debe sobrevivir a múltiples rondas de enemigos que se vuelven progresivamente más difíciles.
 
@@ -192,7 +192,7 @@ El jugador debe resistir lo suficiente para alcanzar la ronda final, donde apare
 
 ---
 
-## 🧠 Mecánicas del Boss
+##  Mecánicas del Boss
 Posee más vida que los enemigos normales.
 
 Tiene comportamientos especiales y patrones de ataque distintos.
@@ -215,7 +215,7 @@ Los dibujos se representan mediante `Picture` y `Pictures`.
 
 ---
 
-## 🎯 Conclusión
+##  Conclusión
 
 Space War es un videojuego funcional en Haskell que cumple con los requisitos de la tarea INFO188. Se implementaron mecánicas de oleadas, combate, jefe final, ítems interactivos y un menú de instrucciones, todo gestionado mediante la Mónada State. El proyecto demuestra una estructura modular, uso correcto de efectos IO, y una experiencia de juego clara y progresiva.
 

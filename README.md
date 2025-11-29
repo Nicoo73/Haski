@@ -2,9 +2,6 @@
 
 ## Informe del Proyecto
 
-Este proyecto corresponde a la **Tarea 1 del curso INFO188 (2025)**, donde se debía implementar un videojuego estilo *Action RPG* en Haskell, haciendo uso de la **Mónada State** y cumpliendo con los requisitos mínimos establecidos.
-
----
 ## Integrantes del Grupo
 Ian Cuevas
 
@@ -14,38 +11,14 @@ Nicolás Molina
 
 ---
 
-## 🎮 Descripción del Juego
+##  Descripción y objetivo del Juego
 
 **Space War** es un videojuego 2D desarrollado completamente en **Haskell**, utilizando la librería **Gloss** para gráficos.  
 El jugador controla una nave espacial que debe **sobrevivir a oleadas de enemigos** lo suficiente como para enfrentar al **jefe final (Boss)**.  
+Los enemigos al morir tienen una probabilidad de dropear distintos items que dan al jugador distintas mejoras de estadísticas. 
 Al derrotar al boss, el juego se considera ganado.
 
 El juego incluye un **menú de instrucciones** que explica los controles y describe los distintos tipos de enemigos.
-
----
-
-##  Requisitos cumplidos
-
-1. **Uso de la Mónada State**  
-   - El estado del juego (`GameState`) se maneja con la Mónada State, permitiendo actualizar vida, enemigos, ítems y lógica de combate de forma funcional.
-
-2. **Juego en terminal y 2D**  
-   - El juego corre en entorno gráfico 2D usando Gloss, cumpliendo con el requisito de visualización simple.
-
-3. **Control con teclado**  
-   - El jugador puede moverse y disparar usando teclas específicas (WASD + Espacio).
-
-4. **Items que afectan atributos**  
-   - Hay ítems que modifican atributos como vida, daño y velocidad del jugador.
-
-5. **Objetivo del juego**  
-   - El objetivo es sobrevivir a las oleadas y vencer al jefe final.
-
-6. **Obstáculos y enemigos**  
-   - Enemigos con distintos patrones de ataque aparecen en oleadas. Algunos tienen mecánicas especiales como explosión kamikaze.
-
-7. **Originalidad**  
-   - Se implementó un sistema de oleadas progresivas, un jefe final con mecánicas distintas, y un menú de instrucciones que informa al jugador.
 
 ---
 
@@ -75,7 +48,7 @@ El juego incluye un **menú de instrucciones** que explica los controles y descr
 
 ---
 
-## 🎮 Controles
+##  Controles
 
 | Acción           | Tecla   |
 |------------------|---------|
@@ -197,7 +170,7 @@ Posee más vida que los enemigos normales.
 
 Tiene comportamientos especiales y patrones de ataque distintos.
 
-Su aparición marca el objetivo final del juego: Al derrotarlo, el juego se considera ganado.
+Su aparición marca el objetivo final del juego: Al derrotarlo habrás ganado.
 
 ---
 
@@ -217,7 +190,7 @@ Los dibujos se representan mediante `Picture` y `Pictures`.
 
 ##  Conclusión
 
-Space War es un videojuego funcional en Haskell que cumple con los requisitos de la tarea INFO188. Se implementaron mecánicas de oleadas, combate, jefe final, ítems interactivos y un menú de instrucciones, todo gestionado mediante la Mónada State. El proyecto demuestra una estructura modular, uso correcto de efectos IO, y una experiencia de juego clara y progresiva.
+Space War es un videojuego funcional en Haskell que cumple con los requisitos de la tarea. Se implementaron mecánicas de oleadas, combate, jefe final, ítems interactivos y un menú de instrucciones, todo gestionado mediante la Mónada State. El proyecto demuestra una estructura modular, uso correcto de efectos IO, y una experiencia de juego clara y progresiva.
 
 ---
 

@@ -16,10 +16,12 @@ import System.IO.Unsafe (unsafePerformIO)
 -- Define la cantidad de enemigos para una oleada específica
 -- Wave 1: 6 enemigos (2 de cada tipo)
 -- Wave 2: 9 enemigos (3 de cada tipo)
+-- Wave 3: 12 enemigos (4 de cada tipo)
 enemiesForWave :: Int -> Int
-enemiesForWave 1 = 6  -- Primera oleada: 2 de cada tipo
-enemiesForWave 2 = 9  -- Segunda oleada: 3 de cada tipo
-enemiesForWave _ = 6  -- Por defecto
+enemiesForWave 1 = 6   -- Primera oleada: 2 de cada tipo
+enemiesForWave 2 = 9   -- Segunda oleada: 3 de cada tipo
+enemiesForWave 3 = 12  -- Tercera oleada: 4 de cada tipo
+enemiesForWave _ = 6   -- Por defecto
 
 
 -- Crea un nuevo estado de oleada, listo para spawnear
@@ -67,9 +69,11 @@ spawnWaveIfNeeded dt wave waveNum =
       -- Determinar composición según oleada
       -- Wave 1: 2 alien1, 2 alien2, 2 alien3
       -- Wave 2: 3 alien1, 3 alien2, 3 alien3
+      -- Wave 3: 4 alien1, 4 alien2, 4 alien3
       enemiesPerType = case waveNum of
         1 -> 2
         2 -> 3
+        3 -> 4
         _ -> 2
         
   in if enemiesLeft wave > 0 && newTime >= 1 -- Genera uno cada 1 segundo

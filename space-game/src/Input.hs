@@ -4,6 +4,8 @@ module Input
   , dirToVector
   , buttonX
   , buttonY
+  , controlsBtnX
+  , controlsBtnY
   ) where
 
 import Graphics.Gloss.Interface.Pure.Game
@@ -13,21 +15,31 @@ import qualified Enemy as E
 import Wave
 
 -------------------------------------------------------------
--- CONSTANTES DEL BOTÓN (Deben coincidir con Render.hs)
+-- CONSTANTES DE BOTONES
 -------------------------------------------------------------
 
+-- Botón Jugar
 buttonX, buttonY :: Float
 buttonX = 0.0
-buttonY = -150.0-- Posición vertical del botón
+buttonY = -150.0
 
 buttonW, buttonH :: Float
-buttonW = 815.0 * 0.4  -- Ancho original * escala
-buttonH = 205.0 * 0.4  -- Alto original * escala
+buttonW = 815.0 * 0.4  
+buttonH = 205.0 * 0.4  
 
--- Constantes para el botón de Game Over (centrado abajo)
+-- Botón Controles
+controlsBtnX, controlsBtnY :: Float
+controlsBtnX = 0.0
+controlsBtnY = -270.0  
+
+controlsBtnW, controlsBtnH :: Float
+controlsBtnW = 966.0 * 0.4  
+controlsBtnH = 230.0 * 0.4  
+
+-- Botón Game Over
 goButtonX, goButtonY, goButtonW, goButtonH :: Float
 goButtonX = 0.0
-goButtonY = -100.0 -- Abajo
+goButtonY = -100.0 
 goButtonW = 200.0
 goButtonH = 60.0
 
@@ -36,14 +48,26 @@ goButtonH = 60.0
 -------------------------------------------------------------
 
 handleEvent :: Event -> GameState -> GameState
+
 -- 1. Clic en el Menú
 handleEvent (EventKey (MouseButton LeftButton) Down _ (mx, my)) gs 
   | currentScreen gs == Menu = handleMenuClick mx my gs
 
--- Clic en pantalla de Derrota (Volver al menú / Reiniciar)
+-- 2. Clic en pantalla de Derrota
 handleEvent (EventKey (MouseButton LeftButton) Down _ (mx, my)) gs 
   | currentScreen gs == GameOver = handleGameOverClick mx my gs
--- 2. Teclas de Juego (Solo funcionan si estamos en Playing)
+
+-- 3. SALIR DE CONTROLES (Volver al menú)
+-- Opción A: Clic izquierdo en cualquier parte
+handleEvent (EventKey (MouseButton LeftButton) Down _ _) gs
+  | currentScreen gs == Controls = gs { currentScreen = Menu }
+
+-- Opción B: Tecla Escape (ESC)
+handleEvent (EventKey (SpecialKey KeyEsc) Down _ _) gs
+  | currentScreen gs == Controls = gs { currentScreen = Menu }
+
+
+-- 4. Teclas de Juego (Solo funcionan si estamos en Playing)
 handleEvent (EventKey (Char c) keyState _ _) gs 
   | currentScreen gs == Playing = case (c, keyState) of
     ('w', Down) -> addKey DUp gs
@@ -57,35 +81,47 @@ handleEvent (EventKey (Char c) keyState _ _) gs
     (' ', Down) -> shootBullet gs
     _           -> gs
 
--- 3. Disparo con Espacio
+-- 5. Disparo con Espacio
 handleEvent (EventKey (SpecialKey KeySpace) Down _ _) gs 
   | currentScreen gs == Playing = shootBullet gs
 
--- 4. Resize de ventana
+-- 6. Resize de ventana
 handleEvent (EventResize newSize) gs =
   gs { windowSize = newSize }
 
 handleEvent _ gs = gs
 
 -------------------------------------------------------------
--- LÓGICA DE MENÚ (Clic en botón)
+-- LÓGICA DE MENÚ
 -------------------------------------------------------------
 
 handleMenuClick :: Float -> Float -> GameState -> GameState
 handleMenuClick mx my gs
-  | isInsideButton mx my = gs { currentScreen = Playing } -- ¡Cambia a Jugar!
+  | isInsidePlay mx my = gs { currentScreen = Playing }
+  | isInsideControls mx my = gs { currentScreen = Controls }
   | otherwise = gs
   where
-    isInsideButton x y =
+    -- Chequeo Botón Jugar
+    isInsidePlay x y =
       x >= buttonX - buttonW / 2 &&
       x <= buttonX + buttonW / 2 &&
       y >= buttonY - buttonH / 2 &&
       y <= buttonY + buttonH / 2
+      
+    -- Chequeo Botón Controles
+    isInsideControls x y =
+      x >= controlsBtnX - controlsBtnW / 2 &&
+      x <= controlsBtnX + controlsBtnW / 2 &&
+      y >= controlsBtnY - controlsBtnH / 2 &&
+      y <= controlsBtnY + controlsBtnH / 2
 
--- NUEVO: Lógica del botón de Game Over
+-------------------------------------------------------------
+-- LÓGICA DE GAME OVER
+-------------------------------------------------------------
+
 handleGameOverClick :: Float -> Float -> GameState -> GameState
 handleGameOverClick mx my gs
-  | isInsideButton mx my = initialState { windowSize = windowSize gs } -- Reseteamos todo y volvemos al Menu
+  | isInsideButton mx my = initialState { windowSize = windowSize gs } 
   | otherwise = gs
   where
     isInsideButton x y =
@@ -93,7 +129,7 @@ handleGameOverClick mx my gs
       x <= goButtonX + goButtonW / 2 &&
       y >= goButtonY - goButtonH / 2 &&
       y <= goButtonY + goButtonH / 2
-      
+       
 -------------------------------------------------------------
 -- FUNCIONES DE JUEGO
 -------------------------------------------------------------
@@ -106,18 +142,18 @@ shootBullet gs@GameState{ playerPos = pPos, playerDir = pDir, bullets = bs, curr
         bulletPos   = pPos, 
         bulletDir   = pDir, 
         bulletSpeed = playerBulletSpeed cs, 
-        bulletDamage = totalDamage          
+        bulletDamage = totalDamage           
     }
   in gs { bullets = newBullet : bs }
 
 -------------------------------------------------------------
--- UPDATE GAME STATE (Solo mueve al jugador)
+-- UPDATE GAME STATE
 -------------------------------------------------------------
 
 updateGameState :: Float -> GameState -> GameState
 updateGameState dt =
-      updatePlayer dt       
-  .   updateBullets dt      
+      updatePlayer dt        
+  .   updateBullets dt       
   .   updateEnemyBullets dt 
 
 -- Movimiento del jugador
@@ -147,11 +183,12 @@ updatePlayer dt gs@GameState{ currentStats = cs } = gs
 
     terrainW = 640.0  
     terrainH = 360.0
-    margin = 16.0  
-    minX = -terrainW / 2 + margin
-    maxX = terrainW / 2 - margin
-    minY = -terrainH / 2 + margin
-    maxY = terrainH / 2 - margin
+    marginX = 80.0  -- Margen horizontal aumentado para evitar que salga de la pantalla
+    marginY = 12.0  -- Margen vertical reducido para más área de movimiento
+    minX = -terrainW / 2 + marginX
+    maxX = terrainW / 2 - marginX
+    minY = -terrainH / 2 + marginY
+    maxY = terrainH / 2 - marginY
 
     newX = clamp (px + moveX) minX maxX
     newY = clamp (py + moveY) minY maxY

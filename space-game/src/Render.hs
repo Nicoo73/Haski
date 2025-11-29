@@ -8,11 +8,9 @@ import Assets
 import Enemy
 import Item
 import Boss 
-import Input (buttonX, buttonY)
-
+import Input (buttonX, buttonY, controlsBtnX, controlsBtnY)
 
 -- Dimensiones de la imagen de fondo del menú
--- Ajustado según tu captura de pantalla (1024x572)
 menuBgW, menuBgH :: Float
 menuBgW = 1024.0 
 menuBgH = 572.0 
@@ -26,17 +24,18 @@ render assets gs = case currentScreen gs of
     Menu    -> drawMenuScreen assets gs
     Playing -> drawGameScreen assets gs
     GameOver -> drawGameOverScreen assets gs
+    Controls -> drawControlsScreen assets gs
 
 drawGameScreen :: Assets -> GameState -> Picture
 drawGameScreen assets gs =
-    pictures [ scaledBackground
-             , drawItems assets gs 
-             , drawEnemies assets gs
-             , drawBoss assets gs
+    pictures [ scaledBackground       
+             , drawItems assets gs    
+             , drawEnemies assets gs  
+             , drawBoss assets gs     
              , drawBossAttacks assets gs
              , drawBullets gs
              , drawEnemyBullets gs
-             , scaledPlayer
+             , scaledPlayer           
              , drawHealthBar gs
              , drawBossHealthBar gs
              , drawHUD assets gs
@@ -68,8 +67,11 @@ drawGameScreen assets gs =
 
     frames = aPlayerFrames assets
     numFrames = max 1 (length frames)
-    frameIndex = floor (animTime gs * 8.0) `mod` numFrames
-    playerSprite = frames !! frameIndex
+    frameIndex = if numFrames == 0 then 0 else floor (animTime gs * 8.0) `mod` numFrames
+    
+    playerSprite = if null frames 
+                   then color blue (rectangleSolid 16 16)
+                   else frames !! frameIndex
 
     scaledPlayer = translate (px * scaleX) (py * scaleY) $ scale scaleX scaleY $ rotate rotAngle playerSprite
 
@@ -82,6 +84,7 @@ drawMenuScreen :: Assets -> GameState -> Picture
 drawMenuScreen assets gs =
     pictures [ scaledMenuBackground
              , drawPlayButton
+             , drawControlsButton 
              ]
   where
     (winWInt, winHInt) = windowSize gs
@@ -94,16 +97,43 @@ drawMenuScreen assets gs =
 
     scaledMenuBackground = scale menuScaleF menuScaleF (aMenuBackground assets)
 
-    -- NUEVA LÓGICA PARA EL BOTÓN:
-    btnScaleFactor = 0.4 -- Factor de escala (40% del tamaño original)
-    playButtonPic = aPlayButton assets -- Obtenemos la imagen
-    
-    -- Dibujamos: primero escalamos, luego movemos a la posición de Input.hs
+    -- Botón Jugar
+    btnScaleFactor = 0.4 
+    playButtonPic = aPlayButton assets 
     drawPlayButton = translate buttonX buttonY $ scale btnScaleFactor btnScaleFactor playButtonPic
+    
+    -- Botón Controles
+    controlsPic = aControlsButton assets
+    drawControlsButton = translate controlsBtnX controlsBtnY $ scale btnScaleFactor btnScaleFactor controlsPic
 
 
 -------------------------------------------------------------
--- NUEVO: RENDER PANTALLA DERROTA
+-- RENDER PANTALLA CONTROLES (Con Fondo)
+-------------------------------------------------------------
+
+drawControlsScreen :: Assets -> GameState -> Picture
+drawControlsScreen assets gs =
+    pictures [ scaledBg ]
+  where
+    (winWInt, winHInt) = windowSize gs
+    winW = fromIntegral winWInt
+    winH = fromIntegral winHInt
+    
+    -- Dimensiones de fondocontroles.jpg
+    bgW = 1024.0
+    bgH = 572.0
+
+    -- Calcular escala para cubrir la pantalla (estilo "cover")
+    scaleW = winW / bgW
+    scaleH = winH / bgH
+    finalScale = max scaleW scaleH 
+
+    bgPic = aControlsBackground assets
+    scaledBg = scale finalScale finalScale bgPic
+
+
+-------------------------------------------------------------
+-- RENDER PANTALLA DERROTA
 -------------------------------------------------------------
 drawGameOverScreen :: Assets -> GameState -> Picture
 drawGameOverScreen assets gs =
@@ -113,27 +143,20 @@ drawGameOverScreen assets gs =
     winW = fromIntegral winWInt
     winH = fromIntegral winHInt
 
-    -- 1. Fondo (derrota.png - 2048x2048)
-    -- Lo escalamos para cubrir toda la pantalla
     bg = aGameOverBackground assets
     bgW = 1024.0
     bgH = 572.0
     scaleW = winW / bgW
     scaleH = winH / bgH
-    scaleBg = max scaleW scaleH -- "Cover" fit
+    scaleBg = max scaleW scaleH 
     
     scaledBg = scale scaleBg scaleBg bg
 
-    -- 2. Botón (botonderrota.png - 3584x1184)
-    -- Lo escalamos y posicionamos abajo
     btnPic = aGameOverButton assets
-    
-    -- Definimos tamaño deseado en pantalla
-    targetBtnW = 250.0 -- Ancho visual del botón
+    targetBtnW = 250.0 
     originalBtnW = 632.0
     scaleBtn = targetBtnW / originalBtnW
 
-    -- Coordenadas (deben coincidir con Input.hs)
     btnX = 0.0
     btnY = -100.0 
 
@@ -151,7 +174,6 @@ drawHealthBar gs =
     (winWInt, winHInt) = windowSize gs
     
     maxHP = 100.0
-    -- CORRECCIÓN: Usamos currentHealth en lugar de playerHealth
     currentHP = fromIntegral (currentHealth gs)
     barW = 100.0
     barH = 10.0
@@ -274,11 +296,10 @@ drawBossAttacks assets gs = pictures (map drawAttack (bossAttacks gs))
             AT1Arrows -> aAttack1Sprite assets
             AT2Ball -> aAttack2Sprite assets
           
-          -- Si es AT1 y va hacia la izquierda, voltear el sprite horizontalmente
           shouldFlip = attackType attack == AT1Arrows && attackDir attack == DLeft
           flippedSprite = if shouldFlip
-                         then scale (-1) 1 attackSprite  -- Voltear horizontalmente
-                         else attackSprite
+                          then scale (-1) 1 attackSprite  
+                          else attackSprite
           
       in translate (x * scaleX) (y * scaleY) $ scale scaleX scaleY $ flippedSprite
 
@@ -293,8 +314,8 @@ drawBossHealthBar gs = case maybeBoss gs of
         barH = 15.0
         
         margin = 20.0
-        barX = 0  -- Centrado horizontalmente
-        barY = fromIntegral winHInt / 2 - margin - (barH / 2) - 30  -- Debajo de la barra del jugador
+        barX = 0  
+        barY = fromIntegral winHInt / 2 - margin - (barH / 2) - 30 
         
         fillPct = max 0 (currentHP / maxHP)
         fillW = barW * fillPct
@@ -310,7 +331,7 @@ drawBossHealthBar gs = case maybeBoss gs of
     in translate barX barY $ pictures [bgBar, fillBar, borderBar, label]
 
 -------------------------------------------------------------
--- RENDER DEL HUD (Opcional)
+-- RENDER DEL HUD
 -------------------------------------------------------------
 
 drawHUD :: Assets -> GameState -> Picture
@@ -324,24 +345,20 @@ drawHUD assets gs = pictures [damagePic, damageValue, speedPic, speedValue]
     spdBase  = playerMoveSpeed stats
     spdBonus = playerSpeedBonus stats
 
-    -- Imagen del rótulo "Daño"
     damagePic = translate (-fromIntegral winWInt / 2 + 50)
                           (fromIntegral winHInt / 2 - 50) $
                 scale 0.5 0.5 (aDamageText assets)
 
-    -- Valor numérico al lado de la imagen
     damageValue = translate (-fromIntegral winWInt / 2 + 95)
                              (fromIntegral winHInt / 2 - 55) $
                   scale 0.15 0.15 $
                   color white $
                   text (": " ++ show dmgBase ++ " (+" ++ show dmgBonus ++ ")")
 
-    -- Imagen del rótulo "Velocidad"
     speedPic = translate (-fromIntegral winWInt / 2 + 80)
                           (fromIntegral winHInt / 2 - 85) $
-                scale 0.5 0.5 (aSpeedText assets)
+                scale 0.25 0.25 (aSpeedText assets)
 
-    -- Velocidad (texto normal)
     speedValue  = translate (-fromIntegral winWInt / 2 + 170)
                            (fromIntegral winHInt / 2 - 90) $
                  scale 0.15 0.15 $
@@ -354,15 +371,17 @@ drawHUD assets gs = pictures [damagePic, damageValue, speedPic, speedValue]
 
 drawWaveCounter :: GameState -> Picture
 drawWaveCounter gs =
-  -- Solo mostrar si no ha aparecido el boss y estamos en oleadas 1 o 2
-  if waveCount gs <= 2 && not (bossSpawned gs)
+  -- Solo mostrar si no ha aparecido el boss y estamos en oleadas 1, 2 o 3
+  if waveCount gs <= 3 && not (bossSpawned gs)
   then
     let (winWInt, winHInt) = windowSize gs
-        -- Calcular completado: 0 si wave 1 no completa, 1 si wave 1 completa, 2 si wave 2 completa
-        completedWaves = if waveCount gs == 1 then 0
-                        else if waveCount gs == 2 && enemiesLeft (wave gs) > 0 then 1
-                        else 2
-        waveText = "Wave " ++ show completedWaves ++ "/2"
+        -- Calcular completado basado en waveCount y enemiesLeft
+        completedWaves = case waveCount gs of
+                          1 -> 0  -- Wave 1 activa, 0 completadas
+                          2 -> if enemiesLeft (wave gs) > 0 then 1 else 2  -- Wave 2 activa
+                          3 -> if enemiesLeft (wave gs) > 0 then 2 else 3  -- Wave 3 activa
+                          _ -> 0
+        waveText = "Wave " ++ show completedWaves ++ "/3"
         
         -- Posición: arriba a la derecha
         xPos = fromIntegral winWInt / 2 - 120

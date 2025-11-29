@@ -79,24 +79,24 @@ updateWorld dt gs =
             currentItems = items gsPlayerMoved ++ droppedItems ++ kamikazeItems
             (remainingItems, gsItemsApplied) = checkItemCollection (playerPos gsPlayerMoved) currentItems gsWithDamage
             
-            -- Verificar si segunda oleada está completa para iniciar timer del boss
-            isSecondWaveComplete = waveCount gsPlayerMoved == 2 && null finalEnemies && enemiesLeft newWave == 0
+            -- Verificar si tercera oleada está completa para iniciar timer del boss
+            isThirdWaveComplete = waveCount gsPlayerMoved == 3 && null finalEnemies && enemiesLeft newWave == 0
             
             -- Actualizar timer del boss
-            newBossTimer = if isSecondWaveComplete && not (bossSpawned gsPlayerMoved) && bossSpawnTimer gsPlayerMoved < 3.0
+            newBossTimer = if isThirdWaveComplete && not (bossSpawned gsPlayerMoved) && bossSpawnTimer gsPlayerMoved < 3.0
                           then bossSpawnTimer gsPlayerMoved + dt
                           else bossSpawnTimer gsPlayerMoved
             
             -- Spawnar boss después de 3 segundos
-            shouldSpawnBoss = isSecondWaveComplete && newBossTimer >= 3.0 && not (bossSpawned gsPlayerMoved)
+            shouldSpawnBoss = isThirdWaveComplete && newBossTimer >= 3.0 && not (bossSpawned gsPlayerMoved)
             
             newBoss = if shouldSpawnBoss then Just createBoss else finalBoss
             newBossSpawned = shouldSpawnBoss || bossSpawned gsPlayerMoved
             
             -- Si el boss fue derrotado, continuar con oleadas normales
             (newWaveState, newWaveCount) = if bossDefeated
-                                            then (nextWave 3, 3)  -- Empezar oleada 3
-                                            else if not newBossSpawned && null finalEnemies && enemiesLeft newWave == 0 && waveCount gsPlayerMoved < 2
+                                            then (nextWave 4, 4)  -- Empezar oleada 4
+                                            else if not newBossSpawned && null finalEnemies && enemiesLeft newWave == 0 && waveCount gsPlayerMoved < 3
                                             then (nextWave (waveCount gsPlayerMoved + 1), waveCount gsPlayerMoved + 1)
                                             else (newWave, waveCount gsPlayerMoved)
         in gsItemsApplied { 
@@ -240,8 +240,8 @@ applyItemEffect item gs@GameState{ currentStats = cs } =
       else gs { currentHealth = min (playerHealth cs) (currentHealth gs + 20) }
 
     SpeedBoost ->
-      let newSpeedBonus = playerSpeedBonus cs + 25.0
-          newMoveSpeed  = playerMoveSpeed cs + 25.0
+      let newSpeedBonus = playerSpeedBonus cs + 3.0
+          newMoveSpeed  = playerMoveSpeed cs + 3.0
       in gs { currentStats = cs { playerSpeedBonus = newSpeedBonus
                                 , playerMoveSpeed  = newMoveSpeed } }
 

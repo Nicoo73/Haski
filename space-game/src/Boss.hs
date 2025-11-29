@@ -123,13 +123,13 @@ moveBoss dt (px, py) boss =
       minRange = bossMinRange boss
       optimalRange = (maxRange + minRange) / 2
       
-      -- Comportamiento táctico
+      -- Comportamiento táctico: el boss SIEMPRE se mueve
       (vx, vy) = if dist > maxRange then
         -- Demasiado lejos: acercarse
-        if dist > 0 then (dx / dist, dy / dist) else (0, 0)
+        if dist > 0 then (dx / dist, dy / dist) else (0, 1)
       else if dist < minRange then
-        -- Demasiado cerca: alejarse
-        if dist > 0 then (-dx / dist, -dy / dist) else (0, 0)
+        -- Demasiado cerca: alejarse (escapar de acorralamiento)
+        if dist > 0 then (-dx / dist, -dy / dist) else (0, -1)
       else
         -- En rango óptimo: orbitar
         if dist > 0
@@ -140,9 +140,9 @@ moveBoss dt (px, py) boss =
               adjustX = (dx / dist) * towardsOptimal * 0.3
               adjustY = (dy / dist) * towardsOptimal * 0.3
           in (perpX * 0.7 + adjustX, perpY * 0.7 + adjustY)
-        else (0, 0)
+        else (0, 1)  -- Fallback: moverse hacia arriba
       
-      -- Aplicar movimiento
+      -- Aplicar movimiento (SIEMPRE se mueve)
       speed = bossSpeed boss
       rawNewX = bx + vx * speed * dt
       rawNewY = by + vy * speed * dt

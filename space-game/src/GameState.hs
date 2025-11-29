@@ -5,7 +5,7 @@ module GameState
   , EnemyBullet(..)
   , PlayerStats(..)
   , Wave(..)
-  , ScreenState(..) -- ¡Asegúrate de exportar esto!
+  , ScreenState(..)
   , initialState
   , initialWave
   , playerSize
@@ -27,8 +27,8 @@ import qualified Boss as B
 -- TIPOS DE PANTALLA
 -------------------------------------------------------------
 
--- ¡AQUÍ ESTABA EL ERROR! Faltaba 'GameOver'
-data ScreenState = Menu | Playing | GameOver
+-- NUEVO: Agregado estado Controls
+data ScreenState = Menu | Playing | GameOver | Controls
   deriving (Eq, Show)
 
 -------------------------------------------------------------
@@ -92,10 +92,10 @@ data GameState = GameState
   , enemies        :: [E.Enemy]
   , bullets        :: [Bullet]
   , enemyBullets   :: [EnemyBullet]
-  , items          :: [Item]       
+  , items          :: [Item]        
   , wave           :: Wave
   , waveCount      :: Int
-  , currentHealth  :: Int          
+  , currentHealth  :: Int           
   , currentStats   :: PlayerStats
   , maybeBoss      :: Maybe B.Boss
   , bossAttacks    :: [B.BossAttack]
@@ -123,7 +123,7 @@ playerStats :: PlayerStats
 playerStats = PlayerStats
   { playerHealth      = 100
   , playerDamage      = 45
-  , playerMoveSpeed   = 200.0 
+  , playerMoveSpeed   = 195.0 
   , playerBulletSpeed = 225.0 
   , playerDamageBonus = 0      
   , playerSpeedBonus  = 0.0    
@@ -147,7 +147,7 @@ initialState = GameState
   , enemies       = []
   , bullets       = []
   , enemyBullets  = []
-  , items         = []         
+  , items         = []          
   , wave          = initialWave
   , waveCount     = 1
   , currentHealth = playerHealth playerStats

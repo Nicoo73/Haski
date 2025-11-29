@@ -5,7 +5,6 @@ module Enemy
   , EnemyType(..)
   , Direction(..)
   , updateEnemy
-  , enemySpeed
   , enemyRadius
   , createAlien1
   , createAlien2
@@ -250,12 +249,13 @@ updateEnemy dt (px, py) allEnemies enemy =
       rawNewX = ex + vx_norm * speed * dt
       rawNewY = ey + vy_norm * speed * dt
       
-      -- Aplicar límites del terreno (640x360) con margen de 16px
-      terrainW = 640.0  -- Actualizado al nuevo ancho
+      -- Aplicar límites del terreno con márgenes ajustados
+      terrainW = 640.0
       terrainH = 360.0
-      margin = 16.0  -- Margen para evitar pegarse al borde
-      clampedX = max (-terrainW / 2 + margin) (min (terrainW / 2 - margin) rawNewX)
-      clampedY = max (-terrainH / 2 + margin) (min (terrainH / 2 - margin) rawNewY)
+      marginX = 80.0  -- Margen horizontal aumentado
+      marginY = 12.0  -- Margen vertical reducido para más área de movimiento
+      clampedX = max (-terrainW / 2 + marginX) (min (terrainW / 2 - marginX) rawNewX)
+      clampedY = max (-terrainH / 2 + marginY) (min (terrainH / 2 - marginY) rawNewY)
       newPos = (clampedX, clampedY)
       
       -- Actualizar temporizador de disparo

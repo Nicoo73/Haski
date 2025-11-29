@@ -17,8 +17,9 @@ data Assets = Assets
   , aAlien2Sprite :: Picture
   , aAlien3Sprite :: Picture
   , aMenuBackground :: Picture
-  , aControlsBackground :: Picture -- NUEVO: Fondo de controles
+  , aControlsBackground :: Picture 
   , aGameOverBackground :: Picture
+  , aVictoryBackground  :: Picture -- NUEVO: Fondo de victoria
   , aGameOverButton     :: Picture
   , aPlayButton       :: Picture
   , aControlsButton   :: Picture
@@ -51,7 +52,6 @@ tryLoadDynamic path tempName = do
         putStrLn $ "ERROR leyendo Dinámico: " ++ path ++ " -> " ++ err
         return Nothing
     Right dyn -> do
-      -- Guardamos en ./ (local)
       let tempPath = "./temp_" ++ tempName ++ ".png"
           img = convertRGBA8 dyn
       saveResult <- try (savePngImage tempPath (ImageRGBA8 img)) :: IO (Either SomeException ())
@@ -104,9 +104,11 @@ loadAssets = do
   -- 2. FONDOS
   mBackground <- tryLoadDynamic (assetsPath ++ "background/background_1.jpg") "bg_game"
   mMenuBackground <- tryLoadDynamic (assetsPath ++ "background/menu.jpg") "bg_menu"
-  -- NUEVO: Cargar fondo de controles
   mControlsBackground <- tryLoadDynamic (assetsPath ++ "background/fondocontroles.jpg") "bg_controls"
   mGameOverBackground <- tryLoadDynamic (assetsPath ++ "background/derrota.jpg") "bg_gameover"
+  
+  -- NUEVO: Cargar fondo de victoria
+  mVictoryBackground <- tryLoadDynamic (assetsPath ++ "background/victoria.jpg") "bg_victory"
   
   -- 3. BOTONES
   mPlayButton <- tryLoadPNG (assetsPath ++ "background/botonjugar.png")
@@ -139,8 +141,10 @@ loadAssets = do
       backgroundFinal = case mBackground of Just pic -> pic; Nothing -> color (makeColorI 10 10 30 255) $ rectangleSolid 480 360
       menuBackgroundFinal = case mMenuBackground of Just pic -> pic; Nothing -> color (makeColorI 50 0 100 255) $ rectangleSolid 480 360
       
-      -- Fallback de controles (gris oscuro si falla la imagen)
       controlsBackgroundFinal = case mControlsBackground of Just pic -> pic; Nothing -> color (makeColorI 30 30 30 255) $ rectangleSolid 480 360
+      
+      -- Fallback Victoria (Verde si falla la imagen)
+      victoryBackgroundFinal = case mVictoryBackground of Just pic -> pic; Nothing -> color (makeColorI 0 100 0 255) $ rectangleSolid 480 360
 
       playButtonFinal = case mPlayButton of Just pic -> pic; Nothing -> color (makeColorI 255 255 255 255) $ rectangleSolid 815 205
       controlsButtonFinal = case mControlsButton of Just pic -> pic; Nothing -> color (makeColorI 200 200 0 255) $ rectangleSolid 966 230
@@ -170,8 +174,9 @@ loadAssets = do
     , aAlien2Sprite    = alien2SpriteFinal
     , aAlien3Sprite    = alien3SpriteFinal
     , aMenuBackground = menuBackgroundFinal
-    , aControlsBackground = controlsBackgroundFinal -- ASIGNAR AQUI
+    , aControlsBackground = controlsBackgroundFinal
     , aGameOverBackground = gameOverBackgroundFinal
+    , aVictoryBackground = victoryBackgroundFinal -- ASIGNAR AQUI
     , aPlayButton      = playButtonFinal
     , aControlsButton  = controlsButtonFinal 
     , aGameOverButton     = gameOverButtonFinal

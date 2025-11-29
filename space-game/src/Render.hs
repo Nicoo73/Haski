@@ -24,6 +24,7 @@ render assets gs = case currentScreen gs of
     Menu    -> drawMenuScreen assets gs
     Playing -> drawGameScreen assets gs
     GameOver -> drawGameOverScreen assets gs
+    Victory  -> drawVictoryScreen assets gs -- NUEVO
     Controls -> drawControlsScreen assets gs
 
 drawGameScreen :: Assets -> GameState -> Picture
@@ -108,7 +109,7 @@ drawMenuScreen assets gs =
 
 
 -------------------------------------------------------------
--- RENDER PANTALLA CONTROLES (Con Fondo)
+-- RENDER PANTALLA CONTROLES
 -------------------------------------------------------------
 
 drawControlsScreen :: Assets -> GameState -> Picture
@@ -119,11 +120,9 @@ drawControlsScreen assets gs =
     winW = fromIntegral winWInt
     winH = fromIntegral winHInt
     
-    -- Dimensiones de fondocontroles.jpg
     bgW = 1024.0
     bgH = 572.0
 
-    -- Calcular escala para cubrir la pantalla (estilo "cover")
     scaleW = winW / bgW
     scaleH = winH / bgH
     finalScale = max scaleW scaleH 
@@ -131,6 +130,36 @@ drawControlsScreen assets gs =
     bgPic = aControlsBackground assets
     scaledBg = scale finalScale finalScale bgPic
 
+-------------------------------------------------------------
+-- RENDER PANTALLA VICTORIA (NUEVO)
+-------------------------------------------------------------
+drawVictoryScreen :: Assets -> GameState -> Picture
+drawVictoryScreen assets gs =
+    pictures [ scaledBg, drawButton ] -- Reusamos el boton de game over para volver
+  where
+    (winWInt, winHInt) = windowSize gs
+    winW = fromIntegral winWInt
+    winH = fromIntegral winHInt
+
+    bg = aVictoryBackground assets
+    bgW = 1024.0
+    bgH = 572.0
+    scaleW = winW / bgW
+    scaleH = winH / bgH
+    scaleBg = max scaleW scaleH 
+    
+    scaledBg = scale scaleBg scaleBg bg
+
+    -- Dibujamos el botón de salir/reset (el mismo que en derrota)
+    btnPic = aGameOverButton assets
+    targetBtnW = 250.0 
+    originalBtnW = 632.0
+    scaleBtn = targetBtnW / originalBtnW
+
+    btnX = 0.0
+    btnY = -100.0 
+
+    drawButton = translate btnX btnY $ scale scaleBtn scaleBtn btnPic
 
 -------------------------------------------------------------
 -- RENDER PANTALLA DERROTA
@@ -371,21 +400,16 @@ drawHUD assets gs = pictures [damagePic, damageValue, speedPic, speedValue]
 
 drawWaveCounter :: GameState -> Picture
 drawWaveCounter gs =
-  -- Solo mostrar si no ha aparecido el boss y estamos en oleadas 1, 2 o 3
   if waveCount gs <= 3 && not (bossSpawned gs)
   then
     let (winWInt, winHInt) = windowSize gs
-        -- Calcular completado basado en waveCount y enemiesLeft
         completedWaves = case waveCount gs of
-                          1 -> 0  -- Wave 1 activa, 0 completadas
-                          2 -> if enemiesLeft (wave gs) > 0 then 1 else 2  -- Wave 2 activa
-                          3 -> if enemiesLeft (wave gs) > 0 then 2 else 3  -- Wave 3 activa
+                          1 -> 0 
+                          2 -> if enemiesLeft (wave gs) > 0 then 1 else 2
+                          3 -> if enemiesLeft (wave gs) > 0 then 2 else 3
                           _ -> 0
         waveText = "Wave " ++ show completedWaves ++ "/3"
-        
-        -- Posición: arriba a la derecha
         xPos = fromIntegral winWInt / 2 - 120
         yPos = fromIntegral winHInt / 2 - 50
-        
     in translate xPos yPos $ scale 0.2 0.2 $ color white $ text waveText
   else blank

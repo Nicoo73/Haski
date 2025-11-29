@@ -11,11 +11,10 @@ Nicolás Molina
 
 ---
 
-##  Descripción y objetivo del Juego
+##  Descripción del Juego
 
 **Space War** es un videojuego 2D desarrollado completamente en **Haskell**, utilizando la librería **Gloss** para gráficos.  
 El jugador controla una nave espacial que debe **sobrevivir a oleadas de enemigos** lo suficiente como para enfrentar al **jefe final (Boss)**.  
-Los enemigos al morir tienen una probabilidad de dropear distintos items que dan al jugador distintas mejoras de estadísticas. 
 Al derrotar al boss, el juego se considera ganado.
 
 El juego incluye un **menú de instrucciones** que explica los controles y describe los distintos tipos de enemigos.
@@ -170,7 +169,7 @@ Posee más vida que los enemigos normales.
 
 Tiene comportamientos especiales y patrones de ataque distintos.
 
-Su aparición marca el objetivo final del juego: Al derrotarlo habrás ganado.
+Su aparición marca el objetivo final del juego: Al derrotarlo, el juego se considera ganado.
 
 ---
 
@@ -190,7 +189,7 @@ Los dibujos se representan mediante `Picture` y `Pictures`.
 
 ##  Conclusión
 
-Space War es un videojuego funcional en Haskell que cumple con los requisitos de la tarea. Se implementaron mecánicas de oleadas, combate, jefe final, ítems interactivos y un menú de instrucciones, todo gestionado mediante la Mónada State. El proyecto demuestra una estructura modular, uso correcto de efectos IO, y una experiencia de juego clara y progresiva.
+Space War es un videojuego funcional en Haskell que cumple con los requisitos de la tarea INFO188. Se implementaron mecánicas de oleadas, combate, jefe final, ítems interactivos y un menú de instrucciones, todo gestionado mediante la Mónada State. El proyecto demuestra una estructura modular, uso correcto de efectos IO, y una experiencia de juego clara y progresiva.
 
 ---
 

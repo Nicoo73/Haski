@@ -38,7 +38,8 @@ drawGameScreen assets gs =
              , scaledPlayer           
              , drawHealthBar gs
              , drawBossHealthBar gs
-             , drawHUD assets gs      
+             , drawHUD assets gs
+             , drawWaveCounter gs
              ]
   where
     (winW, winH) = windowSize gs
@@ -363,3 +364,28 @@ drawHUD assets gs = pictures [damagePic, damageValue, speedPic, speedValue]
                  scale 0.15 0.15 $
                  color white $
                  text (": " ++ show spdBase ++ " (+" ++ show spdBonus ++ ")")
+
+-------------------------------------------------------------
+-- CONTADOR DE OLEADAS
+-------------------------------------------------------------
+
+drawWaveCounter :: GameState -> Picture
+drawWaveCounter gs =
+  -- Solo mostrar si no ha aparecido el boss y estamos en oleadas 1, 2 o 3
+  if waveCount gs <= 3 && not (bossSpawned gs)
+  then
+    let (winWInt, winHInt) = windowSize gs
+        -- Calcular completado basado en waveCount y enemiesLeft
+        completedWaves = case waveCount gs of
+                          1 -> 0  -- Wave 1 activa, 0 completadas
+                          2 -> if enemiesLeft (wave gs) > 0 then 1 else 2  -- Wave 2 activa
+                          3 -> if enemiesLeft (wave gs) > 0 then 2 else 3  -- Wave 3 activa
+                          _ -> 0
+        waveText = "Wave " ++ show completedWaves ++ "/3"
+        
+        -- Posición: arriba a la derecha
+        xPos = fromIntegral winWInt / 2 - 120
+        yPos = fromIntegral winHInt / 2 - 50
+        
+    in translate xPos yPos $ scale 0.2 0.2 $ color white $ text waveText
+  else blank

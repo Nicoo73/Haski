@@ -24,7 +24,7 @@ updateWorld dt gs =
     -- 2. Spawn Enemigos (solo si no hay boss)
     (spawned, newWave) = if bossSpawned gsPlayerMoved
                          then ([], wave gsPlayerMoved)
-                         else spawnWaveIfNeeded dt (wave gsPlayerMoved)
+                         else spawnWaveIfNeeded dt (wave gsPlayerMoved) (waveCount gsPlayerMoved)
     
     -- 3. Mover Enemigos
     allEnemies = enemies gsPlayerMoved ++ spawned
@@ -79,17 +79,24 @@ updateWorld dt gs =
             currentItems = items gsPlayerMoved ++ droppedItems ++ kamikazeItems
             (remainingItems, gsItemsApplied) = checkItemCollection (playerPos gsPlayerMoved) currentItems gsWithDamage
             
-            -- Verificar si primera oleada está completa para spawnar boss
-            isFirstWaveComplete = waveCount gsPlayerMoved == 1 && null finalEnemies && enemiesLeft newWave == 0
-            shouldSpawnBoss = isFirstWaveComplete && not (bossSpawned gsPlayerMoved)
+            -- Verificar si tercera oleada está completa para iniciar timer del boss
+            isThirdWaveComplete = waveCount gsPlayerMoved == 3 && null finalEnemies && enemiesLeft newWave == 0
+            
+            -- Actualizar timer del boss
+            newBossTimer = if isThirdWaveComplete && not (bossSpawned gsPlayerMoved) && bossSpawnTimer gsPlayerMoved < 3.0
+                          then bossSpawnTimer gsPlayerMoved + dt
+                          else bossSpawnTimer gsPlayerMoved
+            
+            -- Spawnar boss después de 3 segundos
+            shouldSpawnBoss = isThirdWaveComplete && newBossTimer >= 3.0 && not (bossSpawned gsPlayerMoved)
             
             newBoss = if shouldSpawnBoss then Just createBoss else finalBoss
             newBossSpawned = shouldSpawnBoss || bossSpawned gsPlayerMoved
             
             -- Si el boss fue derrotado, continuar con oleadas normales
             (newWaveState, newWaveCount) = if bossDefeated
-                                            then (nextWave 2, 2)  -- Empezar oleada 2
-                                            else if not newBossSpawned && null finalEnemies && enemiesLeft newWave == 0
+                                            then (nextWave 4, 4)  -- Empezar oleada 4
+                                            else if not newBossSpawned && null finalEnemies && enemiesLeft newWave == 0 && waveCount gsPlayerMoved < 3
                                             then (nextWave (waveCount gsPlayerMoved + 1), waveCount gsPlayerMoved + 1)
                                             else (newWave, waveCount gsPlayerMoved)
         in gsItemsApplied { 
@@ -101,7 +108,8 @@ updateWorld dt gs =
              waveCount = newWaveCount,
              maybeBoss = if bossDefeated then Nothing else newBoss,
              bossAttacks = finalBossAttacks,
-             bossSpawned = if bossDefeated then False else newBossSpawned
+             bossSpawned = if bossDefeated then False else newBossSpawned,
+             bossSpawnTimer = if bossDefeated then 0.0 else newBossTimer
            }
 
 -------------------------------------------------------------
@@ -171,11 +179,11 @@ checkCollisions bullets enemies =
                    damagedEnemy = head hits
                    newHealth = enemyHealth damagedEnemy - damage
                    
-                   -- Si el enemigo muere, generar item y eliminarlo
+                   -- Si el enemigo muere, generar item según su tipo
                    (finalEnemies, newItems) = 
                      if newHealth <= 0
                      then (tail hits ++ misses, 
-                           case spawnItemPure (enemyPos damagedEnemy) of
+                           case spawnItemForEnemy (enemyType damagedEnemy) (enemyPos damagedEnemy) of
                              Just item -> [item]
                              Nothing -> [])
                      else (damagedEnemy { enemyHealth = newHealth } : tail hits ++ misses, [])
@@ -205,8 +213,8 @@ checkKamikazeCollisions (px, py) enemies =
       -- Calcular daño total de las explosiones
       totalDamage = sum (map enemyDamage exploding)
       
-      -- Generar items de los Alien3 que explotaron
-      droppedItems = [ item | enemy <- exploding, Just item <- [spawnItemPure (enemyPos enemy)] ]
+      -- Generar items de los Alien3 que explotaron según su tipo
+      droppedItems = [ item | enemy <- exploding, Just item <- [spawnItemForEnemy (enemyType enemy) (enemyPos enemy)] ]
       
       -- Enemigos que sobreviven (los que no explotaron)
       survivingEnemies = surviving ++ others
@@ -224,13 +232,16 @@ checkItemCollection (px, py) items gs =
 -- APLICAR EFECTO DEL ÍTEMapplyItemEffect :: Item -> GameState -> GameState
 applyItemEffect item gs@GameState{ currentStats = cs } = 
   case itemType item of
-    -- Cura 20 de vida, respetando el máximo definido en playerHealth de los stats
+    -- HealSmall: Si está a vida máxima, aumenta el máximo en 15. Si no, cura 20.
     HealSmall ->
-      gs { currentHealth = min (playerHealth cs) (currentHealth gs + 20) }
+      if currentHealth gs >= playerHealth cs
+      then gs { currentStats = cs { playerHealth = playerHealth cs + 15 }
+              , currentHealth = playerHealth cs + 15 }
+      else gs { currentHealth = min (playerHealth cs) (currentHealth gs + 20) }
 
     SpeedBoost ->
-      let newSpeedBonus = playerSpeedBonus cs + 25.0
-          newMoveSpeed  = playerMoveSpeed cs + 25.0
+      let newSpeedBonus = playerSpeedBonus cs + 3.0
+          newMoveSpeed  = playerMoveSpeed cs + 3.0
       in gs { currentStats = cs { playerSpeedBonus = newSpeedBonus
                                 , playerMoveSpeed  = newMoveSpeed } }
 

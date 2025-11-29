@@ -58,9 +58,9 @@ bossRadius = 32.0
 createBoss :: Boss
 createBoss = Boss
   { bossPos = (0, 150)  -- Arriba en el centro
-  , bossHealth = 1000
-  , bossMaxHealth = 1000
-  , bossSpeed = 30.0  -- 30 px/s
+  , bossHealth = 6666
+  , bossMaxHealth = 6666
+  , bossSpeed = 45.0  -- 45 px/s
   , bossShootRange = 252.0  -- 100% del rango del jugador (252px)
   , bossMinRange = 126.0  -- 50% del rango del jugador
   , attackPattern = initialPattern
@@ -123,13 +123,13 @@ moveBoss dt (px, py) boss =
       minRange = bossMinRange boss
       optimalRange = (maxRange + minRange) / 2
       
-      -- Comportamiento táctico
+      -- Comportamiento táctico: el boss SIEMPRE se mueve
       (vx, vy) = if dist > maxRange then
         -- Demasiado lejos: acercarse
-        if dist > 0 then (dx / dist, dy / dist) else (0, 0)
+        if dist > 0 then (dx / dist, dy / dist) else (0, 1)
       else if dist < minRange then
-        -- Demasiado cerca: alejarse
-        if dist > 0 then (-dx / dist, -dy / dist) else (0, 0)
+        -- Demasiado cerca: alejarse (escapar de acorralamiento)
+        if dist > 0 then (-dx / dist, -dy / dist) else (0, -1)
       else
         -- En rango óptimo: orbitar
         if dist > 0
@@ -140,9 +140,9 @@ moveBoss dt (px, py) boss =
               adjustX = (dx / dist) * towardsOptimal * 0.3
               adjustY = (dy / dist) * towardsOptimal * 0.3
           in (perpX * 0.7 + adjustX, perpY * 0.7 + adjustY)
-        else (0, 0)
+        else (0, 1)  -- Fallback: moverse hacia arriba
       
-      -- Aplicar movimiento
+      -- Aplicar movimiento (SIEMPRE se mueve)
       speed = bossSpeed boss
       rawNewX = bx + vx * speed * dt
       rawNewY = by + vy * speed * dt
@@ -212,7 +212,7 @@ executeAT2 dt (px, py) boss =
         { attackType = AT2Ball
         , attackPos = bossPos boss
         , attackDir = dir
-        , attackSpeed = 60.0  -- 60 px/s
+        , attackSpeed = 75.0  -- 75 px/s
         , attackDamage = 9
         , attackPhase = 0
         }
@@ -252,7 +252,7 @@ executeAT1 dt boss =
                     { attackType = AT1Arrows
                     , attackPos = (xPos, yPos + (fromIntegral i - 2) * arrowSpacing)
                     , attackDir = dir
-                    , attackSpeed = 50.0  -- 50 px/s
+                    , attackSpeed = 75.0  -- 75 px/s
                     , attackDamage = 20
                     , attackPhase = phase
                     }

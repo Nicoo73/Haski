@@ -183,11 +183,12 @@ updatePlayer dt gs@GameState{ currentStats = cs } = gs
 
     terrainW = 640.0  
     terrainH = 360.0
-    margin = 16.0  
-    minX = -terrainW / 2 + margin
-    maxX = terrainW / 2 - margin
-    minY = -terrainH / 2 + margin
-    maxY = terrainH / 2 - margin
+    marginX = 80.0  -- Margen horizontal aumentado para evitar que salga de la pantalla
+    marginY = 12.0  -- Margen vertical reducido para más área de movimiento
+    minX = -terrainW / 2 + marginX
+    maxX = terrainW / 2 - marginX
+    minY = -terrainH / 2 + marginY
+    maxY = terrainH / 2 - marginY
 
     newX = clamp (px + moveX) minX maxX
     newY = clamp (py + moveY) minY maxY

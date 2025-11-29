@@ -5,6 +5,14 @@
 Este proyecto corresponde a la **Tarea 1 del curso INFO188 (2025)**, donde se debía implementar un videojuego estilo *Action RPG* en Haskell, haciendo uso de la **Mónada State** y cumpliendo con los requisitos mínimos establecidos.
 
 ---
+## 👥 Integrantes del Grupo
+Ian Cuevas
+
+Marcelo Lara
+
+Nicolás Molina
+
+---
 
 ## 🎮 Descripción del Juego
 
@@ -99,13 +107,11 @@ cabal build
 
 ---
 
-## Ejecución
+▶️ Ejecución
+Puedes compilar y ejecutar el juego directamente con:
 
-Con Cabal:
-
-```bash
-cabal run
-```
+make run
+Este comando compila el proyecto usando Cabal y lanza el juego automáticamente.
 
 ---
 
@@ -202,6 +208,10 @@ bossSprite   <- loadBMP "assets/boss.bmp"
 ```
 
 Los dibujos se representan mediante `Picture` y `Pictures`.
+
+---
+## 🎯 Conclusión
+Space War es un videojuego funcional en Haskell que cumple con los requisitos de la tarea INFO188. Se implementaron mecánicas de oleadas, combate, jefe final, ítems interactivos y un menú de instrucciones, todo gestionado mediante la Mónada State. El proyecto demuestra una estructura modular, uso correcto de efectos IO, y una experiencia de juego clara y progresiva.
 
 ---
 

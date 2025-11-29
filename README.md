@@ -107,10 +107,12 @@ cabal build
 
 ---
 
-▶️ Ejecución
+## 3. Ejecución
 Puedes compilar y ejecutar el juego directamente con:
 
+```bash
 make run
+```
 Este comando compila el proyecto usando Cabal y lanza el juego automáticamente.
 
 ---
@@ -190,12 +192,15 @@ Cada oleada incrementa la cantidad, velocidad y agresividad de las naves enemiga
 
 El jugador debe resistir lo suficiente para alcanzar la ronda final, donde aparece el Boss.
 
-🧠 Mecánicas del Boss
+---
+
+## 🧠 Mecánicas del Boss
 Posee más vida que los enemigos normales.
 
 Tiene comportamientos especiales y patrones de ataque distintos.
 
 Su aparición marca el objetivo final del juego: Al derrotarlo, el juego se considera ganado.
+
 ---
 
 ## Gráficos
@@ -211,10 +216,10 @@ bossSprite   <- loadBMP "assets/boss.bmp"
 Los dibujos se representan mediante `Picture` y `Pictures`.
 
 ---
+
 ## 🎯 Conclusión
-```
+
 Space War es un videojuego funcional en Haskell que cumple con los requisitos de la tarea INFO188. Se implementaron mecánicas de oleadas, combate, jefe final, ítems interactivos y un menú de instrucciones, todo gestionado mediante la Mónada State. El proyecto demuestra una estructura modular, uso correcto de efectos IO, y una experiencia de juego clara y progresiva.
 
-```
 ---
 

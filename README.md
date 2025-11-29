@@ -2,9 +2,6 @@
 
 ## Informe del Proyecto
 
-Este proyecto corresponde a la **Tarea 1 del curso INFO188 (2025)**, donde se debía implementar un videojuego estilo *Action RPG* en Haskell, haciendo uso de la **Mónada State** y cumpliendo con los requisitos mínimos establecidos.
-
----
 ## Integrantes del Grupo
 Ian Cuevas
 
@@ -14,10 +11,11 @@ Nicolás Molina
 
 ---
 
-## 🎮 Descripción del Juego
+##  Descripción y objetivo del Juego
 
 **Space War** es un videojuego 2D desarrollado completamente en **Haskell**, utilizando la librería **Gloss** para gráficos.  
 El jugador controla una nave espacial que debe **sobrevivir a oleadas de enemigos** lo suficiente como para enfrentar al **jefe final (Boss)**.  
+Los enemigos pueden dropear distintos items que mejoran distintas estadísticas del jugador.
 Al derrotar al boss, el juego se considera ganado.
 
 El juego incluye un **menú de instrucciones** que explica los controles y describe los distintos tipos de enemigos.
@@ -75,7 +73,7 @@ El juego incluye un **menú de instrucciones** que explica los controles y descr
 
 ---
 
-## 🎮 Controles
+##  Controles
 
 | Acción           | Tecla   |
 |------------------|---------|

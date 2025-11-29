@@ -1,46 +1,82 @@
-# # Space Survivors (Haskell + Gloss)
+# Space War (Haskell + Gloss)
 
-## Descripción del Juego
-**Space Survivors** es un juego tipo *Vampire Survivors* y *The Binding of Isaac* desarrollado completamente en **Haskell**, utilizando la librería **Gloss** para gráficos 2D.
+## 📖 Informe del Proyecto
 
-El jugador controla una nave que se mueve libremente en un plano 2D y debe sobrevivir a múltiples **oleadas de enemigos**. Puede realizar un **ataque manual** mediante una tecla.  
-Al final del juego existe una **ronda final** donde aparece un **Jefe (Boss)** con más vida y mecánicas diferentes.
-
-El juego implementa **mónadas** (`State`, `IO`) para manejar el estado del juego, actualizar la lógica y gestionar entradas del usuario.
+Este proyecto corresponde a la **Tarea 1 del curso INFO188 (2025)**, donde se debía implementar un videojuego estilo *Action RPG* en Haskell, haciendo uso de la **Mónada State** y cumpliendo con los requisitos mínimos establecidos.
 
 ---
 
-## Características Principales
-- Movimiento libre en 2D (no limitado a izquierda y derecha).
-- Enemigos que aparecen en **oleadas** con dificultad creciente.
-- Sistema de **disparo manual** mediante una tecla.
-- Colisiones entre enemigos, balas y jugador.
-- Sistema de vida y puntaje.
-- **Jefe final** con comportamiento especial.
-- Gráficos renderizados mediante **Gloss**.
-- Uso de **mónadas** para el estado y lógica del juego.
+## 🎮 Descripción del Juego
+
+**Space War** es un videojuego 2D desarrollado completamente en **Haskell**, utilizando la librería **Gloss** para gráficos.  
+El jugador controla una nave espacial que debe **sobrevivir a oleadas de enemigos** lo suficiente como para enfrentar al **jefe final (Boss)**.  
+Al derrotar al boss, el juego se considera ganado.
+
+El juego incluye un **menú de instrucciones** que explica los controles y describe los distintos tipos de enemigos.
 
 ---
 
-## Tecnologías Utilizadas
-- **Haskell (GHC)**
-- **Gloss**
-- **Mónadas:**
-  - `State` para el estado del juego.
-  - `IO` para carga de recursos gráficos.
-- Stack o Cabal.
+## ✅ Requisitos cumplidos
+
+1. **Uso de la Mónada State**  
+   - El estado del juego (`GameState`) se maneja con la Mónada State, permitiendo actualizar vida, enemigos, ítems y lógica de combate de forma funcional.
+
+2. **Juego en terminal y 2D**  
+   - El juego corre en entorno gráfico 2D usando Gloss, cumpliendo con el requisito de visualización simple.
+
+3. **Control con teclado**  
+   - El jugador puede moverse y disparar usando teclas específicas (WASD + Espacio).
+
+4. **Items que afectan atributos**  
+   - Hay ítems que modifican atributos como vida, daño y velocidad del jugador.
+
+5. **Objetivo del juego**  
+   - El objetivo es sobrevivir a las oleadas y vencer al jefe final.
+
+6. **Obstáculos y enemigos**  
+   - Enemigos con distintos patrones de ataque aparecen en oleadas. Algunos tienen mecánicas especiales como explosión kamikaze.
+
+7. **Originalidad**  
+   - Se implementó un sistema de oleadas progresivas, un jefe final con mecánicas distintas, y un menú de instrucciones que informa al jugador.
 
 ---
 
-## Controles
-| Acción | Tecla |
-|--------|-------|
-| Mover arriba | W |
-| Mover abajo | S |
-| Mover izquierda | A |
-| Mover derecha | D |
-| Disparar | Espacio |
-| Salir del juego | Esc |
+## ✨ Características Principales
+
+- Movimiento libre en 2D.  
+- Oleadas de enemigos con dificultad creciente.  
+- Sistema de disparo manual.  
+- Colisiones entre balas, enemigos y jugador.  
+- Sistema de vida y daño.  
+- Jefe final con comportamiento especial.  
+- Menú de instrucciones con descripción de enemigos y controles.  
+- Renderizado gráfico con Gloss.  
+- Uso de mónadas para lógica y estado del juego.
+
+---
+
+## 🛠️ Tecnologías Utilizadas
+
+- **Haskell (GHC)**  
+- **Gloss**  
+- **JuicyPixels** para manejo de imágenes  
+- **Mónadas:**  
+  - `State` para el estado del juego  
+  - `IO` para carga de recursos gráficos  
+- **Cabal** como sistema de construcción
+
+---
+
+## 🎮 Controles
+
+| Acción           | Tecla   |
+|------------------|---------|
+| Mover arriba     | W       |
+| Mover abajo      | S       |
+| Mover izquierda  | A       |
+| Mover derecha    | D       |
+| Disparar         | Espacio |
+| Salir del juego  | Esc     |
 
 ---
 
@@ -49,17 +85,10 @@ El juego implementa **mónadas** (`State`, `IO`) para manejar el estado del jueg
 ### 1. Clonar el repositorio
 ```bash
 git clone <URL_DEL_REPOSITORIO>
-cd space-survivors
+cd space-war
 ````
 
 ### 2. Instalar dependencias
-
-Con Stack:
-
-```bash
-stack setup
-stack build
-```
 
 Con Cabal:
 
@@ -72,12 +101,6 @@ cabal build
 
 ## Ejecución
 
-Con Stack:
-
-```bash
-stack run
-```
-
 Con Cabal:
 
 ```bash
@@ -89,21 +112,32 @@ cabal run
 ## Estructura del Proyecto
 
 ```
-space-survivors/
-│
-├── src/
-│   ├── Main.hs         -- Punto de entrada, ciclo principal de Gloss.
-│   ├── Types.hs        -- Tipos del juego: GameState, Player, Enemy, Bullet...
-│   ├── Logic.hs        -- Actualización del mundo, colisiones, oleadas.
-│   ├── Graphics.hs     -- Renderizado con Gloss.
-│   ├── Input.hs        -- Manejo de controles.
-│   └── Waves.hs        -- Generación de oleadas y jefe.
+space-war/
 │
 ├── assets/
-│   ├── player.png
-│   ├── enemy.png
-│   └── boss.png
+│   ├── attacks/
+│   ├── background/
+│   ├── enemies/
+│   ├── items/
+│   ├── player/
+│   └── stats/
 │
+├── space-game/
+│   ├── dist-newstyle/
+│   └── src/
+│       ├── Assets.hs
+│       ├── Boss.hs
+│       ├── Enemy.hs
+│       ├── GameState.hs
+│       ├── Input.hs
+│       ├── Item.hs
+│       ├── Main.hs
+│       ├── Render.hs
+│       ├── Update.hs
+│       └── Wave.hs
+│
+├── cabal.project
+├── Makefile
 └── README.md
 ```
 
@@ -141,18 +175,20 @@ Utilizado en:
 ```haskell
 play window bgColor fps initialState render handleInput update
 ```
-
 ---
+🚀 Oleadas y Jefe Final
+El sistema de oleadas es el núcleo del desafío en Space War. El jugador debe sobrevivir a múltiples rondas de enemigos que se vuelven progresivamente más difíciles.
 
-## Oleadas y Jefe Final
+Cada oleada incrementa la cantidad, velocidad y agresividad de las naves enemigas.
 
-* Cada oleada aumenta la cantidad y velocidad de los enemigos.
-* Tras varias oleadas aparece un **Boss** con:
+El jugador debe resistir lo suficiente para alcanzar la ronda final, donde aparece el Boss.
 
-  * Más vida
-  * Movimientos especiales
-  * Tamaño mayor
+🧠 Mecánicas del Boss
+Posee más vida que los enemigos normales.
 
+Tiene comportamientos especiales y patrones de ataque distintos.
+
+Su aparición marca el objetivo final del juego: Al derrotarlo, el juego se considera ganado.
 ---
 
 ## Gráficos
@@ -169,16 +205,3 @@ Los dibujos se representan mediante `Picture` y `Pictures`.
 
 ---
 
-## Estado del Proyecto
-
-* [x] Diseño conceptual
-* [ ] Definición de tipos base
-* [ ] Movimiento del jugador
-* [ ] Ataque manual
-* [ ] Sistema básico de oleadas
-* [ ] Colisiones
-* [ ] Jefe final
-* [ ] Implementación gráfica
-* [ ] Menú inicial y Game Over
-
----

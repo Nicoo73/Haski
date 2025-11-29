@@ -100,6 +100,7 @@ data GameState = GameState
   , maybeBoss      :: Maybe B.Boss
   , bossAttacks    :: [B.BossAttack]
   , bossSpawned    :: Bool
+  , bossSpawnTimer :: Float  -- Timer para delay de 3s antes de spawnar boss
   } deriving (Show)
 
 -------------------------------------------------------------
@@ -154,6 +155,7 @@ initialState = GameState
   , maybeBoss     = Nothing
   , bossAttacks   = []
   , bossSpawned   = False
+  , bossSpawnTimer = 0.0
   }
 
 -------------------------------------------------------------

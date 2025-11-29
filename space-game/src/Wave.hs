@@ -13,9 +13,13 @@ import System.IO.Unsafe (unsafePerformIO)
 -- LÓGICA DE PROGRESIÓN DE OLEADAS
 -------------------------------------------------------------
 
--- Define la cantidad de enemigos para una oleada específica (6 enemigos fijos: 4 Alien1 + 2 Alien3)
+-- Define la cantidad de enemigos para una oleada específica
+-- Wave 1: 6 enemigos (2 de cada tipo)
+-- Wave 2: 9 enemigos (3 de cada tipo)
 enemiesForWave :: Int -> Int
-enemiesForWave _waveNum = 6  -- Siempre 6 enemigos por oleada
+enemiesForWave 1 = 6  -- Primera oleada: 2 de cada tipo
+enemiesForWave 2 = 9  -- Segunda oleada: 3 de cada tipo
+enemiesForWave _ = 6  -- Por defecto
 
 
 -- Crea un nuevo estado de oleada, listo para spawnear
@@ -54,20 +58,29 @@ randomEdgePosition = do
       return (-halfW + margin, y)
 
 -- Genera un enemigo si el tiempo lo permite y quedan enemigos por spawnear
-spawnWaveIfNeeded :: Float -> Wave -> ([Enemy], Wave)
-spawnWaveIfNeeded dt wave =
+spawnWaveIfNeeded :: Float -> Wave -> Int -> ([Enemy], Wave)
+spawnWaveIfNeeded dt wave waveNum =
   let newTime = timeSinceSpawn wave + dt
-      totalInWave = enemiesForWave 1  -- 6 total
+      totalInWave = enemiesForWave waveNum
       spawnedCount = totalInWave - enemiesLeft wave  -- Cuántos ya se spawnearon
+      
+      -- Determinar composición según oleada
+      -- Wave 1: 2 alien1, 2 alien2, 2 alien3
+      -- Wave 2: 3 alien1, 3 alien2, 3 alien3
+      enemiesPerType = case waveNum of
+        1 -> 2
+        2 -> 3
+        _ -> 2
+        
   in if enemiesLeft wave > 0 && newTime >= 1 -- Genera uno cada 1 segundo
        then 
          -- Generar posición aleatoria para CADA enemigo
          let (spawnPos, enemy) = unsafePerformIO $ do
                pos <- randomEdgePosition
-               -- Primeros 2 son Alien1, siguientes 2 son Alien2, últimos 2 son Alien3
-               let e = if spawnedCount < 2
+               -- Distribuir enemigos: primero Alien1, luego Alien2, luego Alien3
+               let e = if spawnedCount < enemiesPerType
                        then createAlien1 pos (playerMoveSpeed playerStats) (playerBulletSpeed playerStats) playerRange
-                       else if spawnedCount < 4
+                       else if spawnedCount < enemiesPerType * 2
                        then createAlien2 pos (playerMoveSpeed playerStats) (playerBulletSpeed playerStats) playerRange
                        else createAlien3 pos (playerMoveSpeed playerStats) (playerBulletSpeed playerStats) playerRange
                return (pos, e)

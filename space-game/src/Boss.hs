@@ -58,9 +58,9 @@ bossRadius = 32.0
 createBoss :: Boss
 createBoss = Boss
   { bossPos = (0, 150)  -- Arriba en el centro
-  , bossHealth = 1000
-  , bossMaxHealth = 1000
-  , bossSpeed = 30.0  -- 30 px/s
+  , bossHealth = 6666
+  , bossMaxHealth = 6666
+  , bossSpeed = 45.0  -- 45 px/s
   , bossShootRange = 252.0  -- 100% del rango del jugador (252px)
   , bossMinRange = 126.0  -- 50% del rango del jugador
   , attackPattern = initialPattern
@@ -212,7 +212,7 @@ executeAT2 dt (px, py) boss =
         { attackType = AT2Ball
         , attackPos = bossPos boss
         , attackDir = dir
-        , attackSpeed = 60.0  -- 60 px/s
+        , attackSpeed = 75.0  -- 75 px/s
         , attackDamage = 9
         , attackPhase = 0
         }
@@ -252,7 +252,7 @@ executeAT1 dt boss =
                     { attackType = AT1Arrows
                     , attackPos = (xPos, yPos + (fromIntegral i - 2) * arrowSpacing)
                     , attackDir = dir
-                    , attackSpeed = 50.0  -- 50 px/s
+                    , attackSpeed = 75.0  -- 75 px/s
                     , attackDamage = 20
                     , attackPhase = phase
                     }

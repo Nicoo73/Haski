@@ -2,7 +2,6 @@
 
 ## Informe del Proyecto
 
----
 ## Integrantes del Grupo
 Ian Cuevas
 

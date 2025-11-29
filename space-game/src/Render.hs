@@ -356,7 +356,7 @@ drawHUD assets gs = pictures [damagePic, damageValue, speedPic, speedValue]
 
     speedPic = translate (-fromIntegral winWInt / 2 + 80)
                           (fromIntegral winHInt / 2 - 85) $
-                scale 0.5 0.5 (aSpeedText assets)
+                scale 0.25 0.25 (aSpeedText assets)
 
     speedValue  = translate (-fromIntegral winWInt / 2 + 170)
                            (fromIntegral winHInt / 2 - 90) $
